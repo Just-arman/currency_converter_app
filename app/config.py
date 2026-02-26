@@ -1,6 +1,5 @@
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from app.logger import log
 
 
 class Settings(BaseSettings):

@@ -1,13 +1,11 @@
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
-import asyncio
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from app.data_parser.scheduler import add_data_to_db
+from app.data_parser.scheduler import add_data_to_db, upd_data_to_db
 from app.auth.router import router as router_auth
 
 
@@ -15,10 +13,27 @@ scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Инициализация приложения...")
-    await add_data_to_db()
-    yield
-    logger.info("Завершение работы приложения...")
+    scheduler = AsyncIOScheduler()
+    try:
+        await add_data_to_db()
+
+        # плановая задача с защитой от дублирования задачи если lifespan вызовется повторно
+        scheduler.add_job(
+            upd_data_to_db,
+            trigger=IntervalTrigger(minutes=10),
+            # trigger=IntervalTrigger(seconds=5),
+            id="currency_update_job",
+            replace_existing=True,
+        )
+        scheduler.start()
+        logger.info("Планировщик запущен")
+        yield
+
+    finally:
+        # проверка перед остановкой для защиты от ошибки если планировщик не успел запуститься
+        if scheduler.running:
+            scheduler.shutdown()
+            logger.info("Планировщик остановлен")
 
 
 def register_routers(app: FastAPI) -> None:

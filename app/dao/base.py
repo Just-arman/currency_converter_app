@@ -83,4 +83,19 @@ class BaseDAO(Generic[T]):
             logger.error(f"Ошибка при добавлении нескольких записей: {e}")
             raise
 
+    async def count(self, filters: BaseModel | None = None):
+        filter_dict = filters.model_dump(exclude_unset=True) if filters else {}
+        if filter_dict:
+            logger.info(f"Подсчет количества записей {self.model.__name__} по фильтрам: {filter_dict}")
+        else: 
+            logger.info(f"Подсчет всех записей {self.model.__name__}")
+        try:
+            query = select(func.count(self.model.id)).filter_by(**filter_dict)
+            result = await self._session.execute(query)
+            count = result.scalar()
+            logger.info(f"Найдено {count} записей.")
+            return count
+        except SQLAlchemyError as e:
+            logger.error(f"Ошибка при подсчете записей: {e}")
+            raise   
 
