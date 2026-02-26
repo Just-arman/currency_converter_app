@@ -1,0 +1,7 @@
+# Игнорирование виртуальных окружений Python
+.vscode/
+.idea/
+.venv/
+__pycache__/
+*.pyc
+.env
