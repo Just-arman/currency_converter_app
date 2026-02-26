@@ -7,8 +7,6 @@ from loguru import logger
 import asyncio
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from app.api.dao import CurrencyRateDAO
-from app.dao.database import Base, engine
 from app.data_parser.scheduler import add_data_to_db
 from app.auth.router import router as router_auth
 
