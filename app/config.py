@@ -1,5 +1,6 @@
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from app.logger import log
 
 
 class Settings(BaseSettings):
@@ -38,3 +39,4 @@ class Settings(BaseSettings):
 
 settings = Settings()
 database_url = settings.DB_URL
+log.info(settings.DB_URL)
