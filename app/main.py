@@ -7,6 +7,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.data_parser.scheduler import add_data_to_db, upd_data_to_db
 from app.auth.router import router as router_auth
+from app.api.router import router as router_api
 
 
 scheduler = AsyncIOScheduler()
@@ -48,6 +49,7 @@ def register_routers(app: FastAPI) -> None:
     # Подключение роутеров
     app.include_router(root_router, tags=["root"])
     app.include_router(router_auth, tags=['Auth'], prefix='/auth')
+    app.app.include_router(router_auth, tags=['Auth'], prefix='/api')
 
 
 def create_app() -> FastAPI:

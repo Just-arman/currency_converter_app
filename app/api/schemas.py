@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
@@ -16,3 +17,14 @@ class CurrencyRateSchema(BaseModel):
     update_time: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AdminCurrencySchema(CurrencyRateSchema):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class BestRateResponse(BaseModel):
+    rate: float
+    banks: list[str]
