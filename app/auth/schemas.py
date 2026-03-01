@@ -70,16 +70,15 @@ class RoleModelUpdate(BaseModel):
             return None
         return v
 
-    # валидатор для того, чтобы для поля name принимались значения None
+    # валидатор для допустимости значения None и любого регистра первой буквы названия роли
     @field_validator("name", mode="before")
     @classmethod
     def normalize_name(cls, v):
         if v is None:
             return None
-
         if isinstance(v, str) and not v.strip():
             return None
-        return v
+        return v.capitalize()
 
 
 class RoleUpdateByID(BaseModel):

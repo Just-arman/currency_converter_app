@@ -40,7 +40,7 @@ async def register_user(user_data: SUserRegister,
 async def login_user(response: Response, user_data: SUserAuth, session: AsyncSession = SessionDep):
     user = await UsersDAO.find_one_or_none(session=session, filters=EmailModel(email=user_data.email))
     auth_user = await authenticate_user(user=user, password=user_data.password)
-    if not (user and auth_user):
+    if not user and not auth_user:
         raise IncorrectEmailOrPasswordException
     set_tokens(response, user.id)
     return {'ok': True, 'message': 'Авторизация прошла успешно!'}
@@ -153,4 +153,4 @@ async def process_refresh_token(
         user: User = Depends(check_refresh_token)
 ):
     set_tokens(response, user.id)
-    return {"message": "Токены успешно обновлены"}
+    return {"message": "Токен успешно обновлен"}

@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.utils import validate_currency_type
 from app.auth.dependencies import get_current_user, get_current_admin_user
@@ -24,12 +24,12 @@ async def get_all_currency(
 
 @router.get("/currency_by_bank/{bank_en}")
 async def get_currency_by_bank(
-        bank_en: str,
+        bank_en: str = Path(description="Название банка на английском языке"),
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
 ) -> CurrencyRateSchema | None:
     """Возвращает курсы валют конкретного банка по его английскому названию."""
-    currencies = await CurrencyRateDAO.find_one_or_none(session=session, filters=BankNameSchema(bank_en=bank_en))
+    currencies = await CurrencyRateDAO.find_one_or_none(session=session, filters=BankNameSchema(bank_en=bank_en.lower()))
     if not currencies:
         raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["bank_not_found"])
     return currencies
@@ -46,13 +46,13 @@ async def get_all_currency_admin(
 
 @router.get("/best_purchase_rate/{currency_type}")
 async def get_best_purchase_rate(
-        currency_type: str,
+        currency_type: str = Path(description="Название валюты на английском языке"),
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
 ) -> BestRateResponse:
     """Возвращает информацию о банке с лучшим курсом покупки для выбранной валюты."""
     currency_type = validate_currency_type(currency_type)
-    result = await CurrencyRateDAO.find_best_purchase_rate(currency_type=currency_type, session=session)
+    result = await CurrencyRateDAO.find_best_purchase_rate(session=session, currency_type=currency_type.lower())
     if not result or not result.banks:
         raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
     return result
@@ -60,13 +60,13 @@ async def get_best_purchase_rate(
 
 @router.get("/best_sale_rate/{currency_type}")
 async def get_best_sale_rate(
-        currency_type: str,
+        currency_type: str = Path(description="Название валюты на английском языке"),
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
 ) -> BestRateResponse:
     """Возвращает информацию о банке с лучшим курсом продажи для выбранной валюты."""
     currency_type = validate_currency_type(currency_type)
-    result = await CurrencyRateDAO.find_best_sale_rate(currency_type=currency_type, session=session)
+    result = await CurrencyRateDAO.find_best_sale_rate(session=session, currency_type=currency_type.lower())
     if not result or not result.banks:
         raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
     return result

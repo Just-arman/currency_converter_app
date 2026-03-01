@@ -39,7 +39,7 @@ def upgrade() -> None:
             {"name": "User"},
             {"name": "Moderator"},
             {"name": "Admin"},
-            {"name": "SuperAdmin"}
+            {"name": "Superadmin"}
         ]
     )
 
