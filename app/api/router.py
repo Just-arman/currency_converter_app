@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.utils import validate_currency_type
-from app.dependencies.auth_dep import get_current_user, get_current_admin_user
+from app.auth.dependencies import get_current_user, get_current_admin_user
 from app.auth.models import User
 from app.config import settings
 from app.dao.session_maker import SessionDep
@@ -10,7 +10,7 @@ from app.api.dao import CurrencyRateDAO
 from app.api.schemas import CurrencyRateSchema, BankNameSchema, AdminCurrencySchema, BestRateResponse
 
 
-router = APIRouter(prefix='/api', tags=['API'])
+router = APIRouter(prefix='/api', tags=['Api'])
 
 
 @router.get("/all_currency/")
@@ -50,7 +50,7 @@ async def get_best_purchase_rate(
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
 ) -> BestRateResponse:
-    """Возвращает информацию о банках с лучшим курсом покупки для выбранной валюты."""
+    """Возвращает информацию о банке с лучшим курсом покупки для выбранной валюты."""
     currency_type = validate_currency_type(currency_type)
     result = await CurrencyRateDAO.find_best_purchase_rate(currency_type=currency_type, session=session)
     if not result or not result.banks:
@@ -64,7 +64,7 @@ async def get_best_sale_rate(
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
 ) -> BestRateResponse:
-    """Возвращает информацию о банках с лучшим курсом продажи для выбранной валюты."""
+    """Возвращает информацию о банке с лучшим курсом продажи для выбранной валюты."""
     currency_type = validate_currency_type(currency_type)
     result = await CurrencyRateDAO.find_best_sale_rate(currency_type=currency_type, session=session)
     if not result or not result.banks:

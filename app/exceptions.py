@@ -3,7 +3,7 @@ from fastapi import status, HTTPException
 # Пользователь уже существует
 UserAlreadyExistsException = HTTPException(
     status_code=status.HTTP_409_CONFLICT,
-    detail='Пользователь уже существует'
+    detail='Пользователь с такими данными уже существует'
 )
 
 # Пользователь не найден
@@ -35,7 +35,6 @@ InvalidTokenFormatException = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
     detail='Некорректный формат токена'
 )
-
 
 # Токен отсутствует в заголовке
 TokenNoFound = HTTPException(

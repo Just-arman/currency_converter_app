@@ -1,9 +1,4 @@
-from typing import Tuple
-
 from fastapi import HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.dao import CurrencyRateDAO
 from app.config import settings
 
 

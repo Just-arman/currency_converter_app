@@ -25,6 +25,10 @@ class AdminCurrencySchema(CurrencyRateSchema):
     updated_at: datetime
 
 
+class BankNameSchema(BaseModel):
+    bank_en: str
+
+
 class BestRateResponse(BaseModel):
     rate: float
     banks: list[str]

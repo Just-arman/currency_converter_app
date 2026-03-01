@@ -103,7 +103,11 @@ async def fetch_all_currencies() -> List[BaseModel]:
 
     # Создаем сессию с таймаутом
     timeout = ClientTimeout(total=10, connect=5)
-    async with ClientSession(timeout=timeout) as session:
+    # Добавляем заголовок с агентом, чтобы избежать блокировки автоматических запросов
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 YaBrowser/24.1.0.0"
+    }
+    async with ClientSession(timeout=timeout, headers=headers) as session:
         tasks = []
 
         # Для первой страницы, потому что она имеет другой URL

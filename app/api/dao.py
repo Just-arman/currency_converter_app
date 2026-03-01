@@ -2,7 +2,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.expression import update
-from typing import List, Tuple
+from typing import List
 from pydantic import BaseModel
 from app.api.schemas import BestRateResponse
 from app.config import settings
@@ -14,9 +14,10 @@ from app.dao.base import BaseDAO
 class CurrencyRateDAO(BaseDAO):
     model = CurrencyRate
 
+
     @classmethod
     async def bulk_update_currency(cls, session: AsyncSession, records: List[BaseModel]) -> int:
-        """Массовое обновление валютных курсов."""
+        """Массовое обновление валютных курсов"""
         try:
             updated_count = 0
             for record in records:
@@ -50,7 +51,7 @@ class CurrencyRateDAO(BaseDAO):
             operation: str,
             session: AsyncSession
     ) -> BestRateResponse | None:
-        """Находит лучший курс для указанной валюты и операции."""
+        """Находит лучший курс для указанной валюты и операции"""
         try:
             field = settings.CURRENCY_FIELDS[currency_type][operation]
             order_by = desc(field) if operation == 'sell' else field
@@ -73,12 +74,14 @@ class CurrencyRateDAO(BaseDAO):
             log.error(f"Ошибка поиска лучшего курса: {e}")
             raise
 
+
     @classmethod
     async def find_best_purchase_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
-        """Находим лучший курс покупки для указанной валюты."""
+        """Находит лучший курс покупки для указанной валюты"""
         return await cls._find_best_rate(currency_type, 'buy', session)
+
 
     @classmethod
     async def find_best_sale_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
-        """Находим лучший курс продажи для указанной валюты."""
+        """Находит лучший курс продажи для указанной валюты"""
         return await cls._find_best_rate(currency_type, 'sell', session)

@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from typing import Callable, Optional, AsyncGenerator
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from loguru import logger
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from sqlalchemy import text
@@ -10,7 +10,8 @@ from app.dao.database import async_session_maker
 
 class DatabaseSessionManager:
     """
-    Класс для управления асинхронными сессиями базы данных, включая поддержку транзакций и зависимости FastAPI.
+    Класс для управления асинхронными сессиями базы данных, 
+    включая поддержку транзакций и зависимостей для FastAPI по работе с сессией.
     """
 
     def __init__(self, session_maker: async_sessionmaker[AsyncSession]):
@@ -25,6 +26,8 @@ class DatabaseSessionManager:
         async with self.session_maker() as session:
             try:
                 yield session
+            except HTTPException:
+                raise  # пробрасываем HTTP-исключения без логирования
             except Exception as e:
                 logger.error(f"Ошибка при создании сессии базы данных: {e}")
                 raise
@@ -44,7 +47,7 @@ class DatabaseSessionManager:
             logger.exception(f"Ошибка транзакции: {e}")
             raise
 
-    async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
+    async def get_session_without_transaction(self) -> AsyncGenerator[AsyncSession, None]:
         """
         Зависимость для FastAPI, возвращающая сессию без управления транзакцией.
         """
@@ -94,13 +97,19 @@ class DatabaseSessionManager:
         return decorator
 
     @property
-    def session_dependency(self) -> Callable:
-        """Возвращает зависимость для FastAPI, обеспечивающую доступ к сессии без транзакции."""
-        return Depends(self.get_session)
+    def session_dependency_without_commit(self) -> Callable:
+        """
+            Возвращает зависимость для FastAPI с доступом к сессии без транзакции.
+            Используется когда не нужен commit транзакции.
+        """
+        return Depends(self.get_session_without_transaction)
 
     @property
-    def session_dependency_with_transaction(self) -> Callable:
-        """Возвращает зависимость для FastAPI с поддержкой транзакций."""
+    def session_dependency_with_commit(self) -> Callable:
+        """
+            Возвращает зависимость для FastAPI с доступом к сессии с транзакций.
+            Используется когда нужен commit транзакции.
+        """
         return Depends(self.get_session_with_transaction)
 
 
@@ -109,9 +118,9 @@ session_manager = DatabaseSessionManager(async_session_maker)
 
 # Зависимости FastAPI для использования сессий
 # без коммита
-SessionDep = session_manager.session_dependency
+SessionDep = session_manager.session_dependency_without_commit
 # с коммитом
-SessionDepTransaction = session_manager.session_dependency_with_transaction
+SessionDepCommit = session_manager.session_dependency_with_commit
 
 # Пример использования декоратора
 # @session_manager.connection(isolation_level="SERIALIZABLE", commit=True)
@@ -122,6 +131,6 @@ SessionDepTransaction = session_manager.session_dependency_with_transaction
 
 # Пример использования зависимости
 # @router.post("/register/")
-# async def register_user(user_data: SUserRegister, session: AsyncSession = SessionDepTransaction):
+# async def register_user(user_data: SUserRegister, session: AsyncSession = SessionDepCommit):
 #     # Логика эндпоинта
 #     pass

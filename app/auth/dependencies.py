@@ -1,15 +1,18 @@
 from datetime import datetime, timezone
-from easy_async_tg_notify import Notifier
-from fastapi import Request, Depends
-from jose import jwt, JWTError, ExpiredSignatureError
+from fastapi import HTTPException, Request, Depends, status
+from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dao import UsersDAO
 from app.auth.models import User
 from app.config import settings
-from app.dependencies.dao_dep import get_session_without_commit
+from app.dao.session_maker import SessionDep
 from app.exceptions import (
-    TokenNoFound, NoJwtException, TokenExpiredException, NoUserIdException, ForbiddenException, UserNotFoundException
+    TokenNoFound, 
+    NoJwtException, 
+    TokenExpiredException, 
+    NoUserIdException, 
+    ForbiddenException
 )
 
 
@@ -31,7 +34,7 @@ def get_refresh_token(request: Request) -> str:
 
 async def check_refresh_token(
         token: str = Depends(get_refresh_token),
-        session: AsyncSession = Depends(get_session_without_commit)
+        session: AsyncSession = SessionDep
 ) -> User:
     """ Проверяем refresh_token и возвращаем пользователя."""
     try:
@@ -44,7 +47,7 @@ async def check_refresh_token(
         if not user_id:
             raise NoJwtException
 
-        user = await UsersDAO(session).find_one_or_none_by_id(data_id=int(user_id))
+        user = await UsersDAO.find_one_or_none_by_id(session=session, data_id=int(user_id))
         if not user:
             raise NoJwtException
 
@@ -53,18 +56,10 @@ async def check_refresh_token(
         raise NoJwtException
 
 
-async def get_current_user(
-        token: str = Depends(get_access_token),
-        session: AsyncSession = Depends(get_session_without_commit)
-) -> User:
-    """Проверяем access_token и возвращаем пользователя."""
+async def get_current_user(token: str = Depends(get_access_token), session: AsyncSession = SessionDep):
     try:
-        # Декодируем токен
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    except ExpiredSignatureError:
-        raise TokenExpiredException
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM)
     except JWTError:
-        # Общая ошибка для токенов
         raise NoJwtException
 
     expire: str = payload.get('exp')
@@ -76,19 +71,13 @@ async def get_current_user(
     if not user_id:
         raise NoUserIdException
 
-    user = await UsersDAO(session).find_one_or_none_by_id(data_id=int(user_id))
+    user = await UsersDAO.find_one_or_none_by_id(data_id=int(user_id), session=session)
     if not user:
-        raise UserNotFoundException
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='User not found')
     return user
 
 
-async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    """Проверяем права пользователя как администратора."""
+async def get_current_admin_user(current_user: User = Depends(get_current_user)):
     if current_user.role.id in [3, 4]:
         return current_user
     raise ForbiddenException
-
-
-async def get_notifier():
-    async with Notifier(settings.BOT_TOKEN) as notifier:
-        yield notifier

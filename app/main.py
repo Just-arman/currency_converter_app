@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from app.data_parser.scheduler import add_data_to_db, upd_data_to_db
+from app.parser.scheduler import add_data_to_db, upd_data_to_db
 from app.auth.router import router as router_auth
 from app.api.router import router as router_api
 
@@ -31,25 +31,25 @@ async def lifespan(app: FastAPI):
         yield
 
     finally:
-        # проверка перед остановкой для защиты от ошибки если планировщик не успел запуститься
         if scheduler.running:
+            # Остановка планировщика при завершении работы приложения
             scheduler.shutdown()
             logger.info("Планировщик остановлен")
 
 
 def register_routers(app: FastAPI) -> None:
     """Регистрация роутеров приложения."""
-    # Корневой роутер
-    root_router = APIRouter()
 
-    @root_router.get("/", tags=["root"])
+    router_root = APIRouter() # Корневой роутер
+
+    @router_root.get("/", tags=["Root"])
     def home_page():
         return { "message": "Добро пожаловать!"}
 
     # Подключение роутеров
-    app.include_router(root_router, tags=["root"])
-    app.include_router(router_auth, tags=['Auth'], prefix='/auth')
-    app.app.include_router(router_auth, tags=['Auth'], prefix='/api')
+    app.include_router(router_root)
+    app.include_router(router_auth)
+    app.include_router(router_api)
 
 
 def create_app() -> FastAPI:
