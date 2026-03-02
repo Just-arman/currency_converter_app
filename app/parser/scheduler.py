@@ -9,7 +9,7 @@ async def add_data_to_db(session):
     count_rate = await CurrencyRateDAO.count(session)
     rez = await fetch_all_currencies()
     if count_rate == 0:
-        await CurrencyRateDAO.add_many(instances=rez)
+        await CurrencyRateDAO.add_many(session=session, instances=rez)
     else:
         await CurrencyRateDAO.bulk_update_currency(session=session, records=rez)
 

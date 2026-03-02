@@ -27,11 +27,12 @@ class Base(AsyncAttrs, DeclarativeBase):
 
     @declared_attr
     def __tablename__(cls) -> str:
+        """Cоздает имя модели в имя таблицы во множественном числе."""
         return cls.__name__.lower() + 's'
 
     def to_dict(self, exclude_none: bool = False):
         """
-        Преобразует объект модели в словарь.
+        Преобразовывает объект модели в словарь.
 
         Args:
             exclude_none (bool): Исключать ли None значения из результата
@@ -59,4 +60,9 @@ class Base(AsyncAttrs, DeclarativeBase):
 
     def __repr__(self) -> str:
         """Строковое представление объекта для удобства отладки."""
-        return f"<{self.__class__.__name__}(id={self.id}, created_at={self.created_at}, updated_at={self.updated_at})>"
+        return (
+            f"<{self.__class__.__name__}("
+            f"id={self.id}, "
+            f"created_at={self.created_at}, "
+            f"updated_at={self.updated_at})>"
+        )
