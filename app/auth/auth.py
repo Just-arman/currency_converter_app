@@ -1,12 +1,13 @@
 from jose import jwt
 from datetime import datetime, timedelta, timezone
 from fastapi.responses import Response
-from app.config import settings
-from app.auth.utils import verify_password
-
 from datetime import datetime, timezone
 from jose import jwt
+
 from app.config import settings
+from app.logger import log
+from app.config import settings
+from app.auth.utils import verify_password
 
 
 # улучшенный прежний формат
@@ -14,9 +15,15 @@ def create_tokens(data: dict) -> dict:
     now = datetime.now(timezone.utc)
 
     def _encode(token_type: str, expire: datetime) -> str:
+        # прежний формат
         payload = data.copy()
         payload.update({"exp": int(expire.timestamp()), "type": token_type})
-        return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+        # новый формат
+        payload_upd = {**data, "exp": int(expire.timestamp()), "type": token_type}
+
+        token_encode = jwt.encode(payload_upd, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        return token_encode
 
     return {
         "access_token": _encode("access", now + timedelta(hours=1)),

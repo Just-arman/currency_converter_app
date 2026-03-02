@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
 from fastapi import HTTPException, Request, Depends, status
 from jose import jwt, JWTError
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dao import UsersDAO
 from app.auth.models import User
 from app.config import settings
+from app.logger import log
 from app.dao.session_maker import SessionDep
 from app.exceptions import (
     TokenNoFound, 
@@ -18,7 +20,7 @@ from app.exceptions import (
 
 def get_access_token(request: Request) -> str:
     """Извлекаем access_token из кук."""
-    token = request.cookies.get('user_access_token')
+    token = request.cookies.get("user_access_token")
     if not token:
         raise TokenNoFound
     return token
@@ -26,7 +28,7 @@ def get_access_token(request: Request) -> str:
 
 def get_refresh_token(request: Request) -> str:
     """Извлекаем refresh_token из кук."""
-    token = request.cookies.get('user_refresh_token')
+    token = request.cookies.get("user_refresh_token")
     if not token:
         raise TokenNoFound
     return token
@@ -62,18 +64,18 @@ async def get_current_user(token: str = Depends(get_access_token), session: Asyn
     except JWTError:
         raise NoJwtException
 
-    expire: str = payload.get('exp')
+    expire = payload.get("exp")
     expire_time = datetime.fromtimestamp(int(expire), tz=timezone.utc)
-    if (not expire) or (expire_time < datetime.now(timezone.utc)):
+    if not expire or expire_time < datetime.now(timezone.utc):
         raise TokenExpiredException
 
-    user_id: str = payload.get('sub')
+    user_id = payload.get("sub")
     if not user_id:
         raise NoUserIdException
 
     user = await UsersDAO.find_one_or_none_by_id(data_id=int(user_id), session=session)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='User not found')
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
 
 

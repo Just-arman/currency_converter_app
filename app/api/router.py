@@ -5,6 +5,7 @@ from app.api.utils import validate_currency_type
 from app.auth.dependencies import get_current_user, get_current_admin_user
 from app.auth.models import User
 from app.config import settings
+from app.logger import log
 from app.dao.session_maker import SessionDep
 from app.api.dao import CurrencyRateDAO
 from app.api.schemas import CurrencyRateSchema, BankNameSchema, AdminCurrencySchema, BestRateResponse

@@ -104,7 +104,6 @@ async def update_user_role(
             session=session,
             filters=RoleModelUpdate(id=role_data.id)
         )
-        print(f"role=")
         if not role:
             raise HTTPException(status_code=404, detail="Роль с таким id не существует")
 
@@ -114,7 +113,6 @@ async def update_user_role(
             session=session,
             filters=RoleModelUpdate(name=role_data.name)
         )
-        print(f"role=")
         if not role:
             raise HTTPException(status_code=404, detail="Роль с таким названием не найдена")
 
