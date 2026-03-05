@@ -4,7 +4,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.expression import update
 from typing import List
 from pydantic import BaseModel
-from app.api.schemas import BestRateResponse
+from loguru import logger
+from app.api.schemas import BestRateResponse, CurrencyRateSchema
 from app.config import settings
 from app.logger import log
 from app.api.models import CurrencyRate
@@ -85,3 +86,53 @@ class CurrencyRateDAO(BaseDAO):
     async def find_best_sale_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
         """Находит лучший курс продажи для указанной валюты"""
         return await cls._find_best_rate(currency_type, 'sell', session)
+    
+
+    @classmethod
+    async def find_best_purchase_rates(
+            cls,
+            session: AsyncSession,
+            usd: bool = False,
+            eur: bool = False,
+            limit: int = 10
+    ) -> dict[str, List]:
+        """Получает лучшие курсы покупки для USD и/или EUR."""
+        result = {}
+        try:
+            if usd:
+                query = select(cls.model).order_by(cls.model.usd_buy).limit(limit)
+                res = await session.execute(query)
+                result['usd'] = res.scalars().all()
+            if eur:
+                query = select(cls.model).order_by(cls.model.eur_buy).limit(limit)
+                res = await session.execute(query)
+                result['eur'] = res.scalars().all()
+            return result
+        except SQLAlchemyError as e:
+            logger.error(f"Ошибка при получении лучших курсов покупки: {e}")
+            raise
+
+
+    @classmethod
+    async def find_best_sale_rates(
+            cls,
+            session: AsyncSession,
+            usd: bool = False,
+            eur: bool = False,
+            limit: int = 10
+    ) -> dict[str, List]:
+        """Получает лучшие курсы продажи для USD и/или EUR."""
+        result = {}
+        try:
+            if usd:
+                query = select(cls.model).order_by(desc(cls.model.usd_sell)).limit(limit)
+                res = await session.execute(query)
+                result['usd'] = res.scalars().all()
+            if eur:
+                query = select(cls.model).order_by(desc(cls.model.eur_sell)).limit(limit)
+                res = await session.execute(query)
+                result['eur'] = res.scalars().all()
+            return result
+        except SQLAlchemyError as e:
+            logger.error(f"Ошибка при получении лучших курсов продажи: {e}")
+            raise
