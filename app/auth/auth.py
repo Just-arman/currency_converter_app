@@ -27,7 +27,7 @@ def create_tokens(data: dict) -> dict:
 
     return {
         "access_token": _encode("access", now + timedelta(hours=1)),
-        "refresh_token": _encode("refresh", now + timedelta(hours=3)),
+        "refresh_token": _encode("refresh", now + timedelta(hours=24)),
     }
 
 

@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.utils import validate_currency_type
 from app.auth.dependencies import get_current_user, get_current_admin_user
@@ -77,14 +77,26 @@ async def get_best_sale_rate(
 async def get_best_purchase_rates(
         usd: bool = False,
         eur: bool = False,
-        limit: int = 10,
+        count: int = Query(10, description="Количество банков с валютными курсами"),
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
 ) -> dict[str, List[CurrencyRateSchema]]:
     """Возвращает топ валютных курсов покупки для USD и/или EUR."""
     if not usd and not eur:
         raise HTTPException(status_code=400, detail="Укажите хотя бы одну валюту: usd или eur")
-    result = await CurrencyRateDAO.find_best_purchase_rates(session=session, usd=usd, eur=eur, limit=limit)
+        
+    # проверка что указанное количество банков не превышает существующее
+    total = await CurrencyRateDAO.get_total_count(session=session)
+    if count > total:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Указанное количество банков превышает доступное количество банков. "
+                f"Следует указать количество меньшее или равное: {total}."
+            )
+        )
+    
+    result = await CurrencyRateDAO.find_best_purchase_rates(session=session, usd=usd, eur=eur, count=count)
     if not result:
         raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
     return result
@@ -94,14 +106,26 @@ async def get_best_purchase_rates(
 async def get_best_sale_rates(
         usd: bool = False,
         eur: bool = False,
-        limit: int = 10,
+        count: int = Query(10, description="Количество банков с валютными курсами"),
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
 ) -> dict[str, List[CurrencyRateSchema]]:
     """Возвращает топ валютных курсов продажи для USD и/или EUR."""
     if not usd and not eur:
         raise HTTPException(status_code=400, detail="Укажите хотя бы одну валюту: usd или eur")
-    result = await CurrencyRateDAO.find_best_sale_rates(session=session, usd=usd, eur=eur, limit=limit)
+    
+    # проверка что указанное количество банков не превышает существующее
+    total = await CurrencyRateDAO.get_total_count(session=session)
+    if count > total:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Указанное количество банков превышает доступное количество банков. "
+                f"Следует указать количество меньшее или равное: {total}."
+            )
+        )
+
+    result = await CurrencyRateDAO.find_best_sale_rates(session=session, usd=usd, eur=eur, count=count)
     if not result:
         raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
     return result

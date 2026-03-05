@@ -1,4 +1,4 @@
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.expression import update
@@ -17,7 +17,7 @@ class CurrencyRateDAO(BaseDAO):
 
 
     @classmethod
-    async def bulk_update_currency(cls, session: AsyncSession, records: List[BaseModel]) -> int:
+    async def bulk_update_currency(cls, records: List[BaseModel], session: AsyncSession) -> int:
         """Массовое обновление валютных курсов"""
         try:
             updated_count = 0
@@ -94,17 +94,17 @@ class CurrencyRateDAO(BaseDAO):
             session: AsyncSession,
             usd: bool = False,
             eur: bool = False,
-            limit: int = 10
+            count: int = 10,
     ) -> dict[str, List]:
         """Получает лучшие курсы покупки для USD и/или EUR."""
         result = {}
         try:
             if usd:
-                query = select(cls.model).order_by(cls.model.usd_buy).limit(limit)
+                query = select(cls.model).order_by(cls.model.usd_buy).limit(count)
                 res = await session.execute(query)
                 result['usd'] = res.scalars().all()
             if eur:
-                query = select(cls.model).order_by(cls.model.eur_buy).limit(limit)
+                query = select(cls.model).order_by(cls.model.eur_buy).limit(count)
                 res = await session.execute(query)
                 result['eur'] = res.scalars().all()
             return result
@@ -119,20 +119,28 @@ class CurrencyRateDAO(BaseDAO):
             session: AsyncSession,
             usd: bool = False,
             eur: bool = False,
-            limit: int = 10
+            count: int = 10
     ) -> dict[str, List]:
         """Получает лучшие курсы продажи для USD и/или EUR."""
         result = {}
         try:
             if usd:
-                query = select(cls.model).order_by(desc(cls.model.usd_sell)).limit(limit)
+                query = select(cls.model).order_by(desc(cls.model.usd_sell)).limit(count)
                 res = await session.execute(query)
                 result['usd'] = res.scalars().all()
             if eur:
-                query = select(cls.model).order_by(desc(cls.model.eur_sell)).limit(limit)
+                query = select(cls.model).order_by(desc(cls.model.eur_sell)).limit(count)
                 res = await session.execute(query)
                 result['eur'] = res.scalars().all()
             return result
         except SQLAlchemyError as e:
             logger.error(f"Ошибка при получении лучших курсов продажи: {e}")
             raise
+
+    
+    @classmethod
+    async def get_total_count(cls, session: AsyncSession) -> int:
+        """Возвращает общее количество банков в БД."""
+        query = select(func.count(cls.model.id))
+        result = await session.execute(query)
+        return result.scalar()
