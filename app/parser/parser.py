@@ -1,9 +1,11 @@
 import asyncio
-from loguru import logger
-from bs4 import BeautifulSoup
-from aiohttp import ClientSession, ClientTimeout, ClientError
 from typing import List, Optional
+
+from aiohttp import ClientError, ClientSession, ClientTimeout
+from bs4 import BeautifulSoup
+from loguru import logger
 from pydantic import BaseModel
+
 from app.api.schemas import CurrencyRateSchema
 
 

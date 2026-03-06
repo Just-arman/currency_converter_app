@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped
-from app.dao.database import Base, str_uniq, float_col
+from app.dao.database import Base, float_col, str_uniq
 
 
 class CurrencyRate(Base):

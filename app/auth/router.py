@@ -1,16 +1,32 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, Response, Depends
+
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.models import User
 from app.auth.auth import authenticate_user, set_tokens
-from app.dao.session_maker import SessionDep, SessionDepCommit
-from app.auth.dependencies import get_current_user, get_current_admin_user, check_refresh_token
-from app.exceptions import NoUserIdException, UserAlreadyExistsException, IncorrectEmailOrPasswordException
 from app.auth.dao import RoleDAO, UsersDAO
+from app.auth.dependencies import (
+    check_refresh_token, 
+    get_current_admin_user,
+    get_current_user
+)
+from app.auth.models import User
 from app.auth.schemas import (
-    RoleUpdateByID, RoleModelUpdate, SUserAuth, SUserRegister, 
-    EmailModel, SUserAddDB, SUserInfo, UserDeleteId, UserID
+    EmailModel, 
+    RoleModelUpdate, 
+    RoleUpdateByID,                  
+    SUserAddDB, 
+    SUserAuth, 
+    SUserInfo, 
+    SUserRegister, 
+    UserDeleteId, 
+    UserID
+)
+from app.dao.session_maker import SessionDep, SessionDepCommit
+from app.exceptions import (
+    IncorrectEmailOrPasswordException, 
+    NoUserIdException, 
+    UserAlreadyExistsException
 )
 
 

@@ -1,5 +1,6 @@
-from sqlalchemy import text, ForeignKey
+from sqlalchemy import ForeignKey, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.dao.database import Base, str_uniq
 
 
@@ -18,6 +19,7 @@ class User(Base):
     email: Mapped[str_uniq]
     password: Mapped[str]
     role_id: Mapped[int] = mapped_column(ForeignKey('roles.id'), default=1, server_default=text("1"))
+    
     role: Mapped["Role"] = relationship("Role", back_populates="users", lazy="joined")
 
     def __repr__(self):

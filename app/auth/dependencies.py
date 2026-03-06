@@ -1,20 +1,19 @@
 from datetime import datetime, timezone
-from fastapi import HTTPException, Request, Depends, status
-from jose import jwt, JWTError
-from loguru import logger
+
+from fastapi import Depends, HTTPException, Request, status
+from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dao import UsersDAO
 from app.auth.models import User
 from app.config import settings
-from app.logger import log
 from app.dao.session_maker import SessionDep
 from app.exceptions import (
-    TokenNoFound, 
-    NoJwtException, 
-    TokenExpiredException, 
+    ForbiddenException, 
+    NoJwtException,
     NoUserIdException, 
-    ForbiddenException
+    TokenExpiredException,
+    TokenNoFound
 )
 
 
@@ -40,11 +39,7 @@ async def check_refresh_token(
 ) -> User:
     """ Проверяем refresh_token и возвращаем пользователя."""
     try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("sub")
         if not user_id:
             raise NoJwtException

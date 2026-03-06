@@ -1,15 +1,17 @@
-from sqlalchemy import desc, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.sql.expression import update
 from typing import List
-from pydantic import BaseModel
+
 from loguru import logger
-from app.api.schemas import BestRateResponse, CurrencyRateSchema
-from app.config import settings
-from app.logger import log
+from pydantic import BaseModel
+from sqlalchemy import desc, func, select
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.expression import update
+
 from app.api.models import CurrencyRate
+from app.api.schemas import BestRateResponse
+from app.config import settings
 from app.dao.base import BaseDAO
+from app.logger import log
 
 
 class CurrencyRateDAO(BaseDAO):

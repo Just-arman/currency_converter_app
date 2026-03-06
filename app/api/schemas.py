@@ -2,10 +2,6 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
-class Message(BaseModel):
-    text: str
-
-
 class CurrencyRateSchema(BaseModel):
     link: str
     bank_en: str
@@ -32,3 +28,7 @@ class BankNameSchema(BaseModel):
 class BestRateResponse(BaseModel):
     rate: float
     banks: list[str]
+
+
+class Message(BaseModel):
+    text: str

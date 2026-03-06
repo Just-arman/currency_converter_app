@@ -1,14 +1,14 @@
-from typing import List, TypeVar, Generic, Type
-from pydantic import BaseModel
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.future import select
-from sqlalchemy import (
-    update as sqlalchemy_update, 
-    delete as sqlalchemy_delete,
-    func
-)
+from typing import Generic, List, Type, TypeVar
+
 from loguru import logger
+from pydantic import BaseModel
+from sqlalchemy import delete as sqlalchemy_delete
+from sqlalchemy import func
+from sqlalchemy import update as sqlalchemy_update
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
 from .database import Base
 
 

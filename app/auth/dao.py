@@ -1,5 +1,5 @@
+from app.auth.models import Role, User
 from app.dao.base import BaseDAO
-from app.auth.models import User, Role
 
 
 class UsersDAO(BaseDAO):

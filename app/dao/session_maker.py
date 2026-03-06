@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
-from typing import Callable, Optional, AsyncGenerator
+from functools import wraps
+from typing import AsyncGenerator, Callable, Optional
+
 from fastapi import Depends, HTTPException
 from loguru import logger
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from sqlalchemy import text
-from functools import wraps
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
 from app.dao.database import async_session_maker
 
 

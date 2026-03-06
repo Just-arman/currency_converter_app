@@ -1,13 +1,15 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, APIRouter
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from app.parser.scheduler import add_data_to_db, upd_data_to_db
-from app.auth.router import router as router_auth
+
 from app.api.router import router as router_api
+from app.auth.router import router as router_auth
+from app.parser.scheduler import add_data_to_db, upd_data_to_db
 
 
 scheduler = AsyncIOScheduler()

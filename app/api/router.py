@@ -1,14 +1,20 @@
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.dao import CurrencyRateDAO
+from app.api.schemas import (
+    AdminCurrencySchema, 
+    BankNameSchema,
+    BestRateResponse, 
+    CurrencyRateSchema
+)
 from app.api.utils import validate_currency_type
-from app.auth.dependencies import get_current_user, get_current_admin_user
+from app.auth.dependencies import get_current_admin_user, get_current_user
 from app.auth.models import User
 from app.config import settings
-from app.logger import log
 from app.dao.session_maker import SessionDep
-from app.api.dao import CurrencyRateDAO
-from app.api.schemas import CurrencyRateSchema, BankNameSchema, AdminCurrencySchema, BestRateResponse
 
 
 router = APIRouter(prefix='/api', tags=['Api'])

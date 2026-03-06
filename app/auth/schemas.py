@@ -1,6 +1,16 @@
 import re
 from typing import Self
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator, computed_field
+
+from pydantic import (
+    BaseModel, 
+    ConfigDict, 
+    EmailStr, 
+    Field, 
+    computed_field,
+    field_validator, 
+    model_validator
+)
+
 from app.auth.utils import get_password_hash
 
 
@@ -15,11 +25,11 @@ class UserBase(EmailModel):
     first_name: str = Field(min_length=3, max_length=50, description="Имя, от 3 до 50 символов")
     last_name: str = Field(min_length=3, max_length=50, description="Фамилия, от 3 до 50 символов")
 
-    # @field_validator("phone_number")
-    # def validate_phone_number(cls, value: str) -> str:
-    #     if not re.match(r'^\+\d{5,15}$', value):
-    #         raise ValueError('Номер телефона должен начинаться с "+" и содержать от 5 до 15 цифр')
-    #     return value
+    @field_validator("phone_number")
+    def validate_phone_number(cls, value: str) -> str:
+        if not re.match(r'^\+\d{5,15}$', value):
+            raise ValueError('Номер телефона должен начинаться с "+" и содержать от 5 до 15 цифр')
+        return value
 
 
 class SUserRegister(UserBase):

@@ -1,13 +1,10 @@
-from jose import jwt
 from datetime import datetime, timedelta, timezone
+
 from fastapi.responses import Response
-from datetime import datetime, timezone
 from jose import jwt
 
-from app.config import settings
-from app.logger import log
-from app.config import settings
 from app.auth.utils import verify_password
+from app.config import settings
 
 
 # улучшенный прежний формат
