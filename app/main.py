@@ -42,9 +42,9 @@ async def lifespan(app: FastAPI):
 def register_routers(app: FastAPI) -> None:
     """Регистрация роутеров приложения."""
 
-    router_root = APIRouter() # Корневой роутер
+    router_root = APIRouter(tags=["Root"]) # Корневой роутер
 
-    @router_root.get("/", tags=["Root"])
+    @router_root.get("/")
     def home_page():
         return { "message": "Добро пожаловать!"}
 
@@ -57,9 +57,8 @@ def register_routers(app: FastAPI) -> None:
 def create_app() -> FastAPI:
     """
    Создание и конфигурация FastAPI приложения.
-   Returns:
-       Сконфигурированное приложение FastAPI
-   """
+   Будет возвращено: Сконфигурированное приложение FastAPI.
+    """
     app = FastAPI(lifespan=lifespan)
 
     # Настройка CORS

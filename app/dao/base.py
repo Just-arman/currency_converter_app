@@ -28,7 +28,7 @@ class BaseDAO(Generic[T]):
 
     @classmethod
     async def find_one_or_none_by_id(cls, session: AsyncSession, data_id: int):
-        """Найти запись по ID"""
+        """Найти одну запись по ID."""
         logger.info(f"Поиск {cls.model.__name__} с ID: {data_id}")
         try:
             query = select(cls.model).filter_by(id=data_id)
@@ -46,7 +46,7 @@ class BaseDAO(Generic[T]):
 
     @classmethod
     async def find_one_or_none(cls, session: AsyncSession, filters: BaseModel):
-        """Найти одну запись по фильтрам"""
+        """Найти одну запись по фильтрам."""
         filter_dict = filters.model_dump(exclude_unset=True)
         logger.info(f"Поиск одной записи {cls.model.__name__} по фильтрам: {filter_dict}")
         try:
@@ -65,7 +65,7 @@ class BaseDAO(Generic[T]):
 
     @classmethod
     async def find_all(cls, session: AsyncSession, filters: BaseModel | None = None):
-        """Найти все записи"""
+        """Найти все записи."""
         if filters:
             filter_dict = filters.model_dump(exclude_unset=True)
         else:
@@ -84,7 +84,7 @@ class BaseDAO(Generic[T]):
 
     @classmethod
     async def add(cls, session: AsyncSession, values: BaseModel):
-        """Добавить одну запись"""
+        """Добавить одну запись."""
         values_dict = values.model_dump(exclude_unset=True)
         logger.info(f"Добавление записи {cls.model.__name__} с параметрами: {values_dict}")
         new_instance = cls.model(**values_dict)
@@ -101,7 +101,7 @@ class BaseDAO(Generic[T]):
 
     @classmethod
     async def add_many(cls, session: AsyncSession, instances: List[BaseModel]):
-        """Добавить несколько записей"""
+        """Добавить несколько записей."""
         values_list = [item.model_dump(exclude_unset=True) for item in instances]
         logger.info(f"Добавление нескольких записей {cls.model.__name__}. Количество: {len(values_list)}")
         new_instances = [cls.model(**values) for values in values_list]
@@ -118,7 +118,7 @@ class BaseDAO(Generic[T]):
 
     @classmethod
     async def update(cls, session: AsyncSession, filters: BaseModel, values: BaseModel):
-        """Обновить записи по фильтрам"""
+        """Обновить записи по фильтрам."""
         filter_dict = filters.model_dump(exclude_unset=True)
         values_dict = values.model_dump(exclude_unset=True)
         logger.info(f"Обновление записей {cls.model.__name__} по фильтру: {filter_dict} с параметрами: {values_dict}")
@@ -141,7 +141,7 @@ class BaseDAO(Generic[T]):
 
     @classmethod
     async def delete(cls, session: AsyncSession, filters: BaseModel):
-        """Удалить записи по фильтру"""
+        """Удалить записи по фильтру."""
         filter_dict = filters.model_dump(exclude_unset=True)
         logger.info(f"Удаление записей {cls.model.__name__} по фильтру: {filter_dict}")
         if not filter_dict:
@@ -162,7 +162,7 @@ class BaseDAO(Generic[T]):
 
     @classmethod
     async def count(cls, session: AsyncSession, filters: BaseModel | None = None):
-        """Подсчитать количество записей"""
+        """Подсчитать количество записей."""
         filter_dict = filters.model_dump(exclude_unset=True) if filters else {}
         logger.info(f"Подсчет количества записей {cls.model.__name__} по фильтру: {filter_dict}")
         try:
