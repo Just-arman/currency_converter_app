@@ -92,8 +92,8 @@ async def update_user_role(
     Меняет роль пользователя по id или name.
     """
 
-    if role_data.name == "string":
-        role_data.name = None
+    # if role_data.name == "string":
+    #     role_data.name = None
 
     # 1. Проверка: оба поля пустые
     if role_data.id is None and role_data.name is None:
