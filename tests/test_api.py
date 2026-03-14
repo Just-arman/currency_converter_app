@@ -1,11 +1,7 @@
 import pytest
-from fastapi import HTTPException
-from unittest.mock import AsyncMock, MagicMock, patch
-from httpx import AsyncClient, ASGITransport
+from unittest.mock import AsyncMock, patch
 from app.api.schemas import BestRateResponse, CurrencyRateSchema
 from app.api.utils import validate_currency_type
-from app.auth.dependencies import get_current_user
-from app.main import app
 
 
 # фикстуры для тестов api
@@ -36,35 +32,7 @@ def best_rate_response():
     return BestRateResponse(rate=74.3, banks=["СберБанк", "ВТБ"])
 
 
-@pytest.fixture
-def mock_user():
-    """Мок-данные пользователя."""
-    user = MagicMock()
-    user.id = 1
-    user.email = "test@test.com"
-    user.role = "user"
-    return user
-
-
-@pytest.fixture
-async def async_client():
-    """Общие данные асинхронного клиента для тестов."""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        yield client
-
-
-@pytest.fixture
-def override_user(mock_user):
-    """Получаем пользователя и затем используем во всех тестах."""
-    app.dependency_overrides[get_current_user] = lambda: mock_user
-    # без lambda
-    # def get_mock_user():
-    #     return mock_user
-    yield
-    app.dependency_overrides.clear()
-
-
-class BaseRatesTest:
+class BaseTestAPI:
     """Базовый класс с общими вспомогательными методами для тестов валютных курсов."""
     async def _test_count_exceeds_total(self, async_client, override_user, url):
         with patch("app.api.router.CurrencyRateDAO.get_total_count", new_callable=AsyncMock) as mock_total:
@@ -77,7 +45,6 @@ class BaseRatesTest:
         assert response.status_code == 400
 
 
-# тесты для validate_currency_type из utils.py
 class TestValidateCurrencyType:
 
     def test_valid_usd(self):
@@ -150,7 +117,7 @@ class TestGetBestPurchaseRate:
             assert response.status_code == 404
 
 
-class TestGetBestPurchaseRates(BaseRatesTest):
+class TestGetBestPurchaseRates(BaseTestAPI):
 
     async def test_no_currency_specified(self, async_client, override_user):
         await self._test_no_currency_specified(async_client, override_user, "/api/best_purchase_rates/")
@@ -193,7 +160,7 @@ class TestGetBestSaleRate:
             assert response.status_code == 404
 
 
-class TestGetBestSaleRates(BaseRatesTest):
+class TestGetBestSaleRates(BaseTestAPI):
 
     async def test_no_currency_specified(self, async_client, override_user):
         await self._test_no_currency_specified(async_client, override_user, "/api/best_purchase_rates/")
