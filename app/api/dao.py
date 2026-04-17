@@ -1,8 +1,9 @@
+from collections import Counter
 from typing import List
 
 from loguru import logger
 from pydantic import BaseModel
-from sqlalchemy import desc, func, select
+from sqlalchemy import delete, desc, func, insert, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import update
@@ -17,33 +18,93 @@ from app.logger import log
 class CurrencyRateDAO(BaseDAO):
     model = CurrencyRate
 
-
+    
     @classmethod
     async def bulk_update_currency(cls, records: List[BaseModel], session: AsyncSession) -> int:
-        """Массовое обновление валютных курсов"""
+        """Синхронизация валютных курсов (insert + update + delete) в бд"""
         try:
-            updated_count = 0
+            # проверка на дублирующиеся банки
+            bank_en_counts = Counter(record.model_dump().get("bank_en") for record in records)
+            duplicates = {k: v for k, v in bank_en_counts.items() if v > 1}
+            if duplicates:
+                log.warning(f"Дублирующиеся банки: {duplicates}")
+
+            # 1. Подготовка данных
+            parsed_records = []
+            parsed_bank_ens = set()
+
             for record in records:
                 record_dict = record.model_dump(exclude_unset=True)
-                if not (bank_en := record_dict.get('bank_en')):
-                    log.warning("Пропуск записи: отсутствует bank_en")
+                bank_en = record_dict.get("bank_en")
+                
+                if not bank_en:
+                    log.warning(f"Пропуск записи: отсутствует bank_en. Данные: {record_dict}")
                     continue
 
-                update_data = {k: v for k, v in record_dict.items() if k != 'bank_en'}
+                parsed_records.append(record_dict)
+                parsed_bank_ens.add(bank_en)
+
+            # 2. Получаем банки из БД
+            result = await session.execute(select(cls.model.bank_en))
+            log.debug(f"result = {result}")
+            # db_bank_ens_first = result.scalars().all()
+            # log.debug(f"db_bank_ens = {db_bank_ens_first}")
+            db_bank_ens = set(result.scalars().all())
+            log.debug(f"db_bank_ens = {db_bank_ens}")
+
+            # 3. Определяем разницу
+            to_add = parsed_bank_ens - db_bank_ens
+            to_delete = db_bank_ens - parsed_bank_ens
+            to_update = parsed_bank_ens & db_bank_ens
+
+            counted_banks = 0 # количество банков без дублирований
+
+            # 4. DELETE (удаляем лишние в БД)
+            if to_delete:
+                delete_stmt = delete(cls.model).where(cls.model.bank_en.in_(to_delete))
+                result = await session.execute(delete_stmt)
+                log.info(f"Удалено банков: {result.rowcount}")
+
+            # 5. INSERT (добавляем новые)
+            new_records = [r for r in parsed_records if r["bank_en"] in to_add]
+
+            if new_records:
+                await session.execute(insert(cls.model), new_records)
+                log.info(f"Добавлено банков: {len(new_records)}")
+                counted_banks += len(new_records)
+
+            # 6. UPDATE (обновляем существующие)
+            updated_banks = set()
+            for record_dict in parsed_records:
+                bank_en = record_dict["bank_en"]
+
+                if bank_en not in to_update:
+                    continue
+
+                update_data = {k: v for k, v in record_dict.items() if k != "bank_en"}
+
                 if not update_data:
-                    log.warning(f"Пропуск записи: нет данных для обновления банка {bank_en}")
                     continue
 
                 stmt = update(cls.model).where(cls.model.bank_en == bank_en).values(**update_data)
                 result = await session.execute(stmt)
-                updated_count += result.rowcount
+                if result.rowcount > 0 and bank_en not in updated_banks:
+                    counted_banks += 1
+                    updated_banks.add(bank_en)
 
+            # 7. COMMIT
             await session.commit()
-            log.info(f"Обновлено записей: {updated_count}")
-            return updated_count
+
+            log.info(
+                f"Синхронизация завершена: "
+                f"Итоговое количество банков = {counted_banks}. "
+            )
+
+            return counted_banks
+
         except SQLAlchemyError as e:
             await session.rollback()
-            log.error(f"Ошибка массового обновления: {e}")
+            log.error(f"Ошибка синхронизации валют: {e}")
             raise
 
 

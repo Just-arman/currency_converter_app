@@ -17,7 +17,7 @@ T = TypeVar("T", bound=Base)
 
 
 class BaseDAO(Generic[T]):
-    model: Type[T] = None
+    model: Type[T]
 
     # для проверки на отсутствие пустых значений модели в дочерних классах
     def __init_subclass__(cls, **kwargs):
