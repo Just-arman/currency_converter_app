@@ -7,6 +7,7 @@ from loguru import logger
 from pydantic import BaseModel
 
 from app.api.schemas import CurrencyRateSchema
+from app.logger import log
 
 
 # Асинхронная функция для получения HTML с повторными попытками и экспоненциальной задержкой
@@ -16,6 +17,8 @@ async def fetch_html(url: str, session: ClientSession, retries: int = 3) -> Opti
         try:
             async with session.get(url) as response:
                 response.raise_for_status()  # Вызывает исключение при ошибке HTTP
+                log.debug(f"Содержимое response: {response}")
+                log.debug(f"Содержимое response.text(): {response.text()}")
                 return await response.text()
         except (ClientError, asyncio.TimeoutError) as e:
             logger.error(f"Ошибка при запросе {url}: {e}")
@@ -35,7 +38,7 @@ def get_link_info(link_anchor):
     link_path = link_anchor.get('href') if link_anchor else None
     if link_path: # '/bank/sberbank/currency'
         parts = link_path.split('/')
-        # logger.info(f"{parts=}")
+        # log.debug(f"{parts=}")
         url = 'https://ru.myfin.by' + link_path
         bank_en = parts[2] if len(parts) > 2 else None
         return url, bank_en
@@ -65,10 +68,14 @@ def parse_currency_table(html: str) -> List[BaseModel]:
                 eur_sell = float(row.find_all('td', class_='EUR')[1].get_text(strip=True).replace(',', '.'))
             except (ValueError, IndexError) as e:
                 logger.warning(f"Ошибка при парсинге курсов валют для {bank_name}: {e}")
-                continue  # Пропускаем этот банк, если курс не удалось извлечь
+                continue  # Пропускаем этот банк, т.к. курс не удалось извлечь
 
+            # получаем время последнего обновления курса валют конкретного банка.
             update_time = row.find('time').get_text(strip=True)
+
+            # получаем ссылку <a> именуемую link для извлечения инфы о банке из неё
             link_info = get_link_info(link)
+
             # Проверка для того, чтобы исключить рекламные трекеры, где bank_en = None
             if link_info[0] is None or link_info[1] is None:
                 continue 
@@ -105,6 +112,7 @@ async def fetch_all_currencies() -> List[BaseModel]:
 
     # Создаем сессию с таймаутом
     timeout = ClientTimeout(total=10, connect=5)
+
     # Добавляем заголовок с агентом, чтобы избежать блокировки автоматических запросов
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 YaBrowser/24.1.0.0"
@@ -133,6 +141,9 @@ async def fetch_all_currencies() -> List[BaseModel]:
 
         # Обрабатываем полученные данные
         for currencies in results:
+            log.info(f"Количество банков на страницах: {len(currencies)}")
             all_currencies.extend(currencies)
+
+        log.info(f"Общее количество банков: {len(all_currencies)}")
 
     return all_currencies
