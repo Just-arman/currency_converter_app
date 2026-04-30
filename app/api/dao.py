@@ -24,7 +24,13 @@ class CurrencyRateDAO(BaseDAO):
         """Синхронизация валютных курсов (insert + update + delete) в бд"""
         try:
             # проверка на дублирующиеся банки
+            # log.info(f"Содержимое records: {records}")
             bank_en_counts = Counter(record.model_dump().get("bank_en") for record in records)
+            log.debug(f"Содержимое bank_en_counts: {bank_en_counts}")
+
+            bank_en_counts_items = bank_en_counts.items()
+            log.debug(f"Содержимое bank_en_counts_items: {bank_en_counts_items}")
+
             duplicates = {k: v for k, v in bank_en_counts.items() if v > 1}
             if duplicates:
                 log.warning(f"Дублирующиеся банки: {duplicates}")
@@ -38,19 +44,19 @@ class CurrencyRateDAO(BaseDAO):
                 bank_en = record_dict.get("bank_en")
                 
                 if not bank_en:
-                    log.warning(f"Пропуск записи: отсутствует bank_en. Данные: {record_dict}")
+                    log.warning(f"Пропуск записи из-за отсутствия bank_en. Данные: {record_dict}")
                     continue
 
                 parsed_records.append(record_dict)
                 parsed_bank_ens.add(bank_en)
 
             # 2. Получаем банки из БД
-            result = await session.execute(select(cls.model.bank_en))
-            log.debug(f"result = {result}")
+            query = select(cls.model.bank_en)
+            result = await session.execute(query)
             # db_bank_ens_first = result.scalars().all()
             # log.debug(f"db_bank_ens = {db_bank_ens_first}")
-            db_bank_ens = set(result.scalars().all())
-            log.debug(f"db_bank_ens = {db_bank_ens}")
+            bank_ens = result.scalars().all()
+            db_bank_ens = set(bank_ens)
 
             # 3. Определяем разницу
             to_add = parsed_bank_ens - db_bank_ens
@@ -62,8 +68,8 @@ class CurrencyRateDAO(BaseDAO):
             # 4. DELETE (удаляем лишние в БД)
             if to_delete:
                 delete_stmt = delete(cls.model).where(cls.model.bank_en.in_(to_delete))
-                result = await session.execute(delete_stmt)
-                log.info(f"Удалено банков: {result.rowcount}")
+                result_del = await session.execute(delete_stmt)
+                log.info(f"Удалено банков: {result_del.rowcount}")
 
             # 5. INSERT (добавляем новые)
             new_records = [r for r in parsed_records if r["bank_en"] in to_add]
@@ -82,6 +88,7 @@ class CurrencyRateDAO(BaseDAO):
                     continue
 
                 update_data = {k: v for k, v in record_dict.items() if k != "bank_en"}
+                # log.info(f"Содержимое update_data: {update_data}")
 
                 if not update_data:
                     continue
@@ -112,28 +119,30 @@ class CurrencyRateDAO(BaseDAO):
     async def _find_best_rate(
             cls,
             currency_type: str,
-            operation: str,
+            operation: str, # операция продажи или покупки валюты
             session: AsyncSession
     ) -> BestRateResponse | None:
         """Находит лучший курс для указанной валюты и операции"""
         try:
             field = settings.CURRENCY_FIELDS[currency_type][operation]
-            order_by = desc(field) if operation == 'sell' else field
+            order_fields = field if operation == 'sell' else desc(field)
 
-            query = select(cls.model).order_by(order_by)
+            # запрос с фильтром на исключение нулевого значения валют
+            query = select(cls.model).where(getattr(cls.model, field) > 0).order_by(order_fields)
             result = await session.execute(query)
             rates = result.scalars().all()
 
             if not rates:
                 return None
 
-            best_value = getattr(rates[0], field)
+            best_rate_value = getattr(rates[0], field)
+            log.debug(f"Содержимое best_rate_value: {best_rate_value}")
             best_banks = [
                 bank.bank_name for bank in rates
-                if getattr(bank, field) == best_value
+                if getattr(bank, field) == best_rate_value
             ]
-
-            return BestRateResponse(rate=best_value, banks=best_banks)
+            log.debug(f"best_banks: {best_banks}")
+            return BestRateResponse(rate=best_rate_value, banks=best_banks)
         except SQLAlchemyError as e:
             log.error(f"Ошибка поиска лучшего курса: {e}")
             raise
@@ -141,13 +150,13 @@ class CurrencyRateDAO(BaseDAO):
 
     @classmethod
     async def find_best_purchase_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
-        """Находит лучший курс покупки для указанной валюты"""
+        """Находит лучший курс покупки для указанной валюты. Чем выше курс покупки, тем лучше для клиента."""
         return await cls._find_best_rate(currency_type, 'buy', session)
 
 
     @classmethod
     async def find_best_sale_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
-        """Находит лучший курс продажи для указанной валюты"""
+        """Находит лучший курс продажи для указанной валюты. Чем ниже курс продажи, тем лучше для клиента."""
         return await cls._find_best_rate(currency_type, 'sell', session)
     
 
@@ -170,6 +179,7 @@ class CurrencyRateDAO(BaseDAO):
                 query = select(cls.model).order_by(cls.model.eur_buy).limit(count)
                 res = await session.execute(query)
                 result['eur'] = res.scalars().all()
+            log.debug(f"Содержимое result функции find_best_purchase_rates: {result}")
             return result
         except SQLAlchemyError as e:
             logger.error(f"Ошибка при получении лучших курсов покупки: {e}")

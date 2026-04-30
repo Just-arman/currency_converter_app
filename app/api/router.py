@@ -51,27 +51,13 @@ async def get_all_currency_admin(
     return await CurrencyRateDAO.find_all(session=session, filters=None)
 
 
-@router.get("/best_purchase_rate/{currency_type}", summary="Получить информацию о самом выгодном валютном курсе для покупки")
-async def get_best_purchase_rate(
+@router.get("/best_sale_rate/{currency_type}", summary="Получить банк с самым низким курсом валюты для продажи клиенту")
+async def get_best_bank_sale_rate(
         currency_type: str = Path(description="Название валюты на английском языке"),
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
 ) -> BestRateResponse:
-    """Возвращает информацию о банке с лучшим курсом покупки для выбранной валюты."""
-    currency_type = validate_currency_type(currency_type)
-    result = await CurrencyRateDAO.find_best_purchase_rate(session=session, currency_type=currency_type.lower())
-    if not result or not result.banks:
-        raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
-    return result
-
-
-@router.get("/best_sale_rate/{currency_type}", summary="Получить информацию о самом выгодном валютном курсе для продажи")
-async def get_best_sale_rate(
-        currency_type: str = Path(description="Название валюты на английском языке"),
-        user_data: User = Depends(get_current_user),
-        session: AsyncSession = SessionDep
-) -> BestRateResponse:
-    """Возвращает информацию о банке с лучшим курсом продажи для выбранной валюты."""
+    """Возвращает информацию о банке, предлагающем самый низкий курс для продажи валюты клиенту."""
     currency_type = validate_currency_type(currency_type)
     result = await CurrencyRateDAO.find_best_sale_rate(session=session, currency_type=currency_type.lower())
     if not result or not result.banks:
@@ -79,31 +65,16 @@ async def get_best_sale_rate(
     return result
 
 
-@router.get("/best_purchase_rates/", summary="Получить информацию о самых выгодных валютных курсах для покупки")
-async def get_best_purchase_rates(
-        usd: bool = False,
-        eur: bool = False,
-        count: int = Query(10, description="Количество банков с валютными курсами"),
+@router.get("/best_purchase_rate/{currency_type}", summary="Получить банк с самым высоким курсом валюты для покупки у клиента")
+async def get_best_bank_purchase_rate(
+        currency_type: str = Path(description="Название валюты на английском языке"),
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
-) -> dict[str, List[CurrencyRateSchema]]:
-    """Возвращает топ валютных курсов покупки для USD и/или EUR."""
-    if not usd and not eur:
-        raise HTTPException(status_code=400, detail="Укажите хотя бы одну валюту: usd или eur")
-        
-    # проверка что указанное количество банков не превышает существующее
-    total = await CurrencyRateDAO.get_total_count(session=session)
-    if count > total:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Указанное количество банков превышает доступное количество банков. "
-                f"Следует указать количество меньшее или равное: {total}."
-            )
-        )
-    
-    result = await CurrencyRateDAO.find_best_purchase_rates(session=session, usd=usd, eur=eur, count=count)
-    if not result:
+) -> BestRateResponse:
+    """Возвращает информацию о банке, предлагающем самый высокий курс для покупки валюты у клиента."""
+    currency_type = validate_currency_type(currency_type)
+    result = await CurrencyRateDAO.find_best_purchase_rate(session=session, currency_type=currency_type.lower())
+    if not result or not result.banks:
         raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
     return result
 
@@ -132,6 +103,35 @@ async def get_best_sale_rates(
         )
 
     result = await CurrencyRateDAO.find_best_sale_rates(session=session, usd=usd, eur=eur, count=count)
+    if not result:
+        raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
+    return result
+
+
+@router.get("/best_purchase_rates/", summary="Получить информацию о самых выгодных валютных курсах для покупки")
+async def get_best_purchase_rates(
+        usd: bool = False,
+        eur: bool = False,
+        count: int = Query(10, description="Количество банков с валютными курсами"),
+        user_data: User = Depends(get_current_user),
+        session: AsyncSession = SessionDep
+) -> dict[str, List[CurrencyRateSchema]]:
+    """Возвращает топ валютных курсов покупки для USD и/или EUR."""
+    if not usd and not eur:
+        raise HTTPException(status_code=400, detail="Укажите хотя бы одну валюту: usd или eur")
+        
+    # проверка что указанное количество банков не превышает существующее
+    total = await CurrencyRateDAO.get_total_count(session=session)
+    if count > total:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Запрошено количество банков, превышающее доступное количество банков. "
+                f"Следует указать количество, не превышающее: {total}."
+            )
+        )
+    
+    result = await CurrencyRateDAO.find_best_purchase_rates(session=session, usd=usd, eur=eur, count=count)
     if not result:
         raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
     return result
