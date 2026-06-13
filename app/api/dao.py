@@ -24,7 +24,7 @@ class CurrencyRateDAO(BaseDAO):
         """Синхронизация валютных курсов (insert + update + delete) в бд"""
         try:
             # проверка на дублирующиеся банки
-            # log.info(f"Содержимое records: {records}")
+            # log.debug(f"Содержимое records: {records}")
             bank_en_counts = Counter(record.model_dump().get("bank_en") for record in records)
             log.debug(f"Содержимое bank_en_counts: {bank_en_counts}")
 
@@ -51,15 +51,16 @@ class CurrencyRateDAO(BaseDAO):
                 parsed_bank_ens.add(bank_en)
 
             # 2. Получаем банки из БД
-            query = select(cls.model.bank_en)
-            result = await session.execute(query)
-            # db_bank_ens_first = result.scalars().all()
-            # log.debug(f"db_bank_ens = {db_bank_ens_first}")
-            bank_ens = result.scalars().all()
-            db_bank_ens = set(bank_ens)
+            result_en = await session.execute(select(cls.model.bank_en))
+            result_name = await session.execute(select(cls.model.bank_name))
+            db_bank_ens = set(result_en.scalars().all())
+            db_bank_names = set(result_name.scalars().all())
 
             # 3. Определяем разницу
-            to_add = parsed_bank_ens - db_bank_ens
+            to_add = {
+                r["bank_en"] for r in parsed_records
+                if r["bank_en"] not in db_bank_ens and r["bank_name"] not in db_bank_names
+            }
             to_delete = db_bank_ens - parsed_bank_ens
             to_update = parsed_bank_ens & db_bank_ens
 
@@ -88,7 +89,7 @@ class CurrencyRateDAO(BaseDAO):
                     continue
 
                 update_data = {k: v for k, v in record_dict.items() if k != "bank_en"}
-                # log.info(f"Содержимое update_data: {update_data}")
+                # log.debug(f"Содержимое update_data: {update_data}")
 
                 if not update_data:
                     continue
@@ -99,13 +100,22 @@ class CurrencyRateDAO(BaseDAO):
                     counted_banks += 1
                     updated_banks.add(bank_en)
 
-            # 7. COMMIT
+            # 7. COMMI (фиксируем результат синхронизации)
             await session.commit()
 
+            # Подсчет количества банков в бд через функцию с прямым подсчетом банков в бд
+            total = await cls.get_total_count(session)
+            # log.info(f"Количество банков в бд: {total}. ")
+            if total == counted_banks:
+                log.info("Результаты подсчетов банков в бд одинаковы. ")
+            else:
+                log.warning("Результаты подсчетов банков в бд отличаются. Требуется проверка. ")
+
             log.info(
-                f"Синхронизация завершена: "
+                f"Синхронизация завершена. "
                 f"Итоговое количество банков = {counted_banks}. "
             )
+            # Значения total и counted_banks должны быть одинаковыми. Исключение если в бд уже были дублирующиеся банки.
 
             return counted_banks
 
@@ -213,7 +223,7 @@ class CurrencyRateDAO(BaseDAO):
     
     @classmethod
     async def get_total_count(cls, session: AsyncSession) -> int:
-        """Возвращает общее количество банков в БД."""
+        """Возвращает количество банков в БД."""
         query = select(func.count(cls.model.id))
         result = await session.execute(query)
         return result.scalar()

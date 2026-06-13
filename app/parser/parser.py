@@ -5,6 +5,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout
 from bs4 import BeautifulSoup
 from loguru import logger
 from pydantic import BaseModel
+from urllib.parse import urlparse, parse_qs, unquote
 
 from app.api.schemas import CurrencyRateSchema
 from app.logger import log
@@ -33,12 +34,26 @@ async def fetch_html(url: str, session: ClientSession, retries: int = 3) -> Opti
             raise
 
 
-# Функция для извлечения информации о ссылке
+# Функция для извлечения информации из ссылки
 def get_link_info(link_anchor):
     link_path = link_anchor.get('href') if link_anchor else None
-    if link_path: # '/bank/sberbank/currency'
+    if link_path:
+        EXCLUDED_BANK_ENS = {'listing'}
+        # для извлечения банка из нестандартного url
+        if 'go?url=' in link_path:
+            parsed = urlparse(link_path)
+            params = parse_qs(parsed.query)
+            inner_url = unquote(params.get('url', [''])[0])  # декодируем внутренний URL
+            inner_parsed = urlparse(inner_url)
+            inner_params = parse_qs(inner_parsed.query)
+            bank_en = inner_params.get('s2', [None])[0]
+            log.info(f"Нестандартный URL: {bank_en=}, {inner_url=}")
+            if not bank_en or bank_en in EXCLUDED_BANK_ENS:
+                return None, None
+            url = 'https://ru.myfin.by' + link_path
+            return url, bank_en
         parts = link_path.split('/')
-        # log.debug(f"{parts=}")
+        log.debug(f"{parts=}")
         url = 'https://ru.myfin.by' + link_path
         bank_en = parts[2] if len(parts) > 2 else None
         return url, bank_en
@@ -73,7 +88,7 @@ def parse_currency_table(html: str) -> List[BaseModel]:
             # получаем время последнего обновления курса валют конкретного банка.
             update_time = row.find('time').get_text(strip=True)
 
-            # получаем ссылку <a> именуемую link для извлечения инфы о банке из неё
+            # получаем ссылку <a>, именуемую link, для извлечения инфы о банке из неё
             link_info = get_link_info(link)
 
             # Проверка для того, чтобы исключить рекламные трекеры, где bank_en = None
@@ -120,11 +135,12 @@ async def fetch_all_currencies() -> List[BaseModel]:
     async with ClientSession(timeout=timeout, headers=headers) as session:
         tasks = []
 
-        # Для первой страницы, потому что она имеет другой URL
-        tasks.append(fetch_page_data('https://ru.myfin.by/currency', session))
+        # Обрабатываем первую страницу отдельно, потому что она имеет другой URL
+        first_page_url = 'https://ru.myfin.by/currency'
+        tasks.append(fetch_page_data(first_page_url, session))
 
-        # Для следующих страниц, потому что у них общий URL
-        # Создаем асинхронные задачи для получения данных с нескольких страниц
+        # Остальные страницы обрабатываем вместе, потому что у них общий URL
+        # Создаем задачи для получения данных с нескольких страниц асинхронно
         for page in range(2, 5):
             url = f'{base_url}{page}'
             tasks.append(fetch_page_data(url, session))
@@ -140,10 +156,13 @@ async def fetch_all_currencies() -> List[BaseModel]:
         #     results.append(result)
 
         # Обрабатываем полученные данные
+        number_page = 1
         for currencies in results:
-            log.info(f"Количество банков на страницах: {len(currencies)}")
+            log.info(f"Количество банков на странице {number_page}: {len(currencies)}")
+            number_page += 1
             all_currencies.extend(currencies)
 
-        log.info(f"Общее количество банков: {len(all_currencies)}")
+        # Получаем количество всех спарсенных банков, включая дублирующиеся
+        log.info(f"Общее количество полученных банков: {len(all_currencies)}")
 
     return all_currencies
