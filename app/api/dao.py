@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import update
 
 from app.api.models import CurrencyRate
-from app.api.schemas import BestRateResponse
 from app.config import settings
 from app.dao.base import BaseDAO
 from app.logger import log
@@ -99,7 +98,7 @@ class CurrencyRateDAO(BaseDAO):
                     counted_banks += 1
                     updated_banks.add(bank_en)
 
-            # 7. COMMI (фиксируем результат синхронизации)
+            # 7. COMMIT (фиксируем результат синхронизации)
             await session.commit()
 
             # Подсчет количества банков в бд через функцию с прямым подсчетом банков в бд
@@ -135,14 +134,13 @@ class CurrencyRateDAO(BaseDAO):
         result = {}
         try:
             if usd:
-                query = select(cls.model).order_by(cls.model.usd_buy).limit(count)
+                query = select(cls.model).where(cls.model.usd_buy > 0).order_by(cls.model.usd_buy).limit(count)
                 res = await session.execute(query)
                 result['usd'] = res.scalars().all()
             if eur:
-                query = select(cls.model).order_by(cls.model.eur_buy).limit(count)
+                query = select(cls.model).where(cls.model.eur_buy > 0).order_by(cls.model.eur_buy).limit(count)
                 res = await session.execute(query)
                 result['eur'] = res.scalars().all()
-            log.debug(f"Содержимое result функции find_best_buy_rates: {result}")
             return result
         except SQLAlchemyError as e:
             logger.error(f"Ошибка при получении лучших курсов покупки: {e}")
@@ -161,11 +159,11 @@ class CurrencyRateDAO(BaseDAO):
         result = {}
         try:
             if usd:
-                query = select(cls.model).order_by(desc(cls.model.usd_sell)).limit(count)
+                query = select(cls.model).where(cls.model.usd_sell > 0).order_by(desc(cls.model.usd_sell)).limit(count)
                 res = await session.execute(query)
                 result['usd'] = res.scalars().all()
             if eur:
-                query = select(cls.model).order_by(desc(cls.model.eur_sell)).limit(count)
+                query = select(cls.model).where(cls.model.eur_sell > 0).order_by(desc(cls.model.eur_sell)).limit(count)
                 res = await session.execute(query)
                 result['eur'] = res.scalars().all()
             return result

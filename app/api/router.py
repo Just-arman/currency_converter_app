@@ -1,20 +1,22 @@
-from typing import List
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dao import CurrencyRateDAO
 from app.api.schemas import (
-    AdminCurrencySchema,
+    CurrencyRateSchema,
+    AdminCurrencyRateSchema,
     BankEnSchema,
-    BestRateResponse, 
-    CurrencyRateSchema
+    BestRatesResponse,
+    EurRateSchema,
+    UsdRateSchema
 )
-from app.api.utils import validate_currency_type
 from app.auth.dependencies import get_current_admin_user, get_current_user
 from app.auth.models import User
 from app.config import settings
 from app.dao.session_maker import SessionDep
+from app.logger import log
 
 
 router = APIRouter(prefix='/api', tags=['Api'])
@@ -33,7 +35,7 @@ async def get_all_currency(
 async def get_all_currency_admin(
         user_data: User = Depends(get_current_admin_user),
         session: AsyncSession = SessionDep
-) -> List[AdminCurrencySchema]:
+) -> List[AdminCurrencyRateSchema]:
     """Возвращает расширенную информацию о курсах валют (только для админов)."""
     return await CurrencyRateDAO.find_all(session=session, filters=None)
 
@@ -58,7 +60,7 @@ async def get_best_buy_rates(
         count: int = Query(10, description="Количество банков с валютными курсами"),
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
-) -> dict[str, List[CurrencyRateSchema]]:
+) -> BestRatesResponse:
     """Возвращает топ банков с наиболее выгодными курсами для покупки клиентом."""
     if not usd and not eur:
         raise HTTPException(status_code=400, detail="Укажите хотя бы одну валюту: usd или eur")
@@ -74,9 +76,21 @@ async def get_best_buy_rates(
             )
         )
     
-    result = await CurrencyRateDAO.find_best_buy_rates(session=session, usd=usd, eur=eur, count=count)
-    if not result:
+    raw_result  = await CurrencyRateDAO.find_best_buy_rates(session=session, usd=usd, eur=eur, count=count)
+    log.debug(f"{raw_result=}")
+    if not raw_result :
         raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
+    
+    result = {}
+    if 'usd' in raw_result:
+        result['usd'] = [UsdRateSchema.model_validate(r) for r in raw_result['usd']]
+    if 'eur' in raw_result:
+        result['eur'] = [EurRateSchema.model_validate(r) for r in raw_result['eur']]
+
+    usd_result = [UsdRateSchema.model_validate(r) for r in raw_result.get('usd', [])]
+    eur_result = [EurRateSchema.model_validate(r) for r in raw_result.get('eur', [])]
+
+    result = BestRatesResponse(usd=usd_result, eur=eur_result)
     return result
 
 

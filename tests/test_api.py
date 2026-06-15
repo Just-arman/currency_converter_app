@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from app.api.schemas import BestRateResponse, CurrencyRateSchema
-from app.api.utils import validate_currency_type
+from app.api.schemas import CurrencyRateSchema
 
 
 # фикстуры для тестов api
@@ -26,12 +25,6 @@ def currency_rate_schema(currency_rate_data):
     return CurrencyRateSchema(**currency_rate_data)
 
 
-@pytest.fixture
-def best_rate_response():
-    """Схема для лучшего курса."""
-    return BestRateResponse(rate=74.3, banks=["СберБанк", "ВТБ"])
-
-
 class BaseTestAPI:
     """Базовый класс с общими вспомогательными методами для тестов валютных курсов."""
     async def _test_count_exceeds_total(self, async_client, override_user, url):
@@ -43,21 +36,6 @@ class BaseTestAPI:
     async def _test_no_currency_specified(self, async_client, override_user, url):
         response = await async_client.get(url)
         assert response.status_code == 400
-
-
-class TestValidateCurrencyType:
-
-    def test_valid_usd(self):
-        assert validate_currency_type("usd") == "usd"
-
-    def test_uppercase_converts_to_lowercase(self):
-        assert validate_currency_type("USD") == "usd"
-
-    def test_valid_eur(self):
-        assert validate_currency_type("eur") == "eur"
-
-    def test_uppercase_eur_converts_to_lowercase(self):
-        assert validate_currency_type("EUR") == "eur"
 
 
 # тесты для роутеров api
