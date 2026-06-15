@@ -12,11 +12,12 @@ class CurrencyRate(Base):
     # Ссылка на страницу с курсами валют
     link: Mapped[str_uniq]
 
-    # Курсы валют: покупка и продажа USD
-    usd_buy: Mapped[float_col]
-    usd_sell: Mapped[float_col]
+    # Курсы USD с точки зрения КЛИЕНТА
+    # на сайте банков эти значения указаны в обратном порядке
+    usd_buy: Mapped[float_col]      # клиент покупает = банк продаёт
+    usd_sell: Mapped[float_col]     # клиент продаёт = банк покупает
 
-    # Курсы валют: покупка и продажа EUR
+    # Курсы EUR с точки зрения КЛИЕНТА
     eur_buy: Mapped[float_col]
     eur_sell: Mapped[float_col]
 
@@ -24,4 +25,4 @@ class CurrencyRate(Base):
     update_time: Mapped[str]
     
     def __repr__(self):
-        return f"{self.__class__.__name__}(id={self.id}, bank={self.bank_name})"
+        return f"{self.__class__.__name__}(bank={self.bank_name})"

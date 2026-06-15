@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
         # плановая задача с защитой от дублирования задачи если lifespan вызовется повторно
         scheduler.add_job(
             add_or_update_data_to_db,
-            trigger=IntervalTrigger(minutes=10),
+            trigger=IntervalTrigger(minutes=30),
             # trigger=IntervalTrigger(seconds=5),
             id="currency_update_job",
             replace_existing=True,

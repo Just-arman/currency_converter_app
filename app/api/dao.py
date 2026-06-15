@@ -81,18 +81,17 @@ class CurrencyRateDAO(BaseDAO):
                 counted_banks += len(new_records)
 
             # 6. UPDATE (обновляем существующие)
+            # создаём пустое множество для отслеживания уже обновлённых банков
             updated_banks = set()
             for record_dict in parsed_records:
                 bank_en = record_dict["bank_en"]
 
                 if bank_en not in to_update:
                     continue
-
+                
+                # исключаем bank_en, потому что он связывает данные парсера с записями в бд, его обновлять не нужно
                 update_data = {k: v for k, v in record_dict.items() if k != "bank_en"}
                 # log.debug(f"Содержимое update_data: {update_data}")
-
-                if not update_data:
-                    continue
 
                 stmt = update(cls.model).where(cls.model.bank_en == bank_en).values(**update_data)
                 result = await session.execute(stmt)
@@ -105,17 +104,16 @@ class CurrencyRateDAO(BaseDAO):
 
             # Подсчет количества банков в бд через функцию с прямым подсчетом банков в бд
             total = await cls.get_total_count(session)
-            # log.info(f"Количество банков в бд: {total}. ")
             if total == counted_banks:
-                log.info("Результаты подсчетов банков в бд одинаковы. ")
+                log.info("Результаты подсчетов банков одинаковы. ")
             else:
-                log.warning("Результаты подсчетов банков в бд отличаются. Требуется проверка. ")
+                log.warning("Результаты подсчетов банков отличаются. Требуется проверка. ")
 
             log.info(
                 f"Синхронизация завершена. "
                 f"Итоговое количество банков = {counted_banks}. "
             )
-            # Значения total и counted_banks должны быть одинаковыми. Исключение если в бд уже были дублирующиеся банки.
+            # Значения total и counted_banks должны быть одинаковыми. Исключение: если в бд уже были дублирующиеся банки.
 
             return counted_banks
 
@@ -129,19 +127,21 @@ class CurrencyRateDAO(BaseDAO):
     async def _find_best_rate(
             cls,
             currency_type: str,
-            operation: str, # операция продажи или покупки валюты
+            operation: str, # 'buy' или 'sell'
             session: AsyncSession
     ) -> BestRateResponse | None:
-        """Находит лучший курс для указанной валюты и операции"""
+        """Находит лучший курс для конкретной валюты и операции"""
         try:
             field = settings.CURRENCY_FIELDS[currency_type][operation]
-            order_fields = field if operation == 'sell' else desc(field)
+            order_fields = desc(field) if operation == 'sell' else field
 
             # запрос с фильтром на исключение нулевого значения валют
             query = select(cls.model).where(getattr(cls.model, field) > 0).order_by(order_fields)
             result = await session.execute(query)
             rates = result.scalars().all()
+            log.debug(f"rates: {rates}")
 
+            # данная проверка нужна на случай, если бд пуста или сайт банка недоступен
             if not rates:
                 return None
 
@@ -157,28 +157,28 @@ class CurrencyRateDAO(BaseDAO):
             log.error(f"Ошибка поиска лучшего курса: {e}")
             raise
 
-
+    
     @classmethod
-    async def find_best_purchase_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
-        """Находит лучший курс покупки для указанной валюты. Чем выше курс покупки, тем лучше для клиента."""
+    async def find_best_buy_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
+        """Находит лучший курс покупки клиентом. Чем ниже курс, тем выгоднее для клиента."""
         return await cls._find_best_rate(currency_type, 'buy', session)
 
 
     @classmethod
-    async def find_best_sale_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
-        """Находит лучший курс продажи для указанной валюты. Чем ниже курс продажи, тем лучше для клиента."""
+    async def find_best_sell_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
+        """Находит лучший курс продажи клиентом. Чем выше курс, тем выгоднее для клиента."""
         return await cls._find_best_rate(currency_type, 'sell', session)
     
 
     @classmethod
-    async def find_best_purchase_rates(
+    async def find_best_buy_rates(
             cls,
             session: AsyncSession,
             usd: bool = False,
             eur: bool = False,
             count: int = 10,
     ) -> dict[str, List]:
-        """Получает лучшие курсы покупки для USD и/или EUR."""
+        """Получает лучшие курсы покупки валюты клиентом."""
         result = {}
         try:
             if usd:
@@ -189,7 +189,7 @@ class CurrencyRateDAO(BaseDAO):
                 query = select(cls.model).order_by(cls.model.eur_buy).limit(count)
                 res = await session.execute(query)
                 result['eur'] = res.scalars().all()
-            log.debug(f"Содержимое result функции find_best_purchase_rates: {result}")
+            log.debug(f"Содержимое result функции find_best_buy_rates: {result}")
             return result
         except SQLAlchemyError as e:
             logger.error(f"Ошибка при получении лучших курсов покупки: {e}")
@@ -197,14 +197,14 @@ class CurrencyRateDAO(BaseDAO):
 
 
     @classmethod
-    async def find_best_sale_rates(
+    async def find_best_sell_rates(
             cls,
             session: AsyncSession,
             usd: bool = False,
             eur: bool = False,
             count: int = 10
     ) -> dict[str, List]:
-        """Получает лучшие курсы продажи для USD и/или EUR."""
+        """Получает лучшие курсы продажи валюты клиентом."""
         result = {}
         try:
             if usd:
@@ -217,7 +217,7 @@ class CurrencyRateDAO(BaseDAO):
                 result['eur'] = res.scalars().all()
             return result
         except SQLAlchemyError as e:
-            logger.error(f"Ошибка при получении лучших курсов продажи: {e}")
+            logger.error(f"Ошибка при получении лучших курсов продажи валюты: {e}")
             raise
 
     

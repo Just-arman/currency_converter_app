@@ -18,8 +18,8 @@ async def fetch_html(url: str, session: ClientSession, retries: int = 3) -> Opti
         try:
             async with session.get(url) as response:
                 response.raise_for_status()  # Вызывает исключение при ошибке HTTP
-                log.debug(f"Содержимое response: {response}")
-                log.debug(f"Содержимое response.text(): {response.text()}")
+                # log.debug(f"Содержимое response: {response}")
+                # log.debug(f"Содержимое response.text(): {response.text()}")
                 return await response.text()
         except (ClientError, asyncio.TimeoutError) as e:
             logger.error(f"Ошибка при запросе {url}: {e}")
@@ -53,7 +53,7 @@ def get_link_info(link_anchor):
             url = 'https://ru.myfin.by' + link_path
             return url, bank_en
         parts = link_path.split('/')
-        log.debug(f"{parts=}")
+        # log.debug(f"{parts=}")
         url = 'https://ru.myfin.by' + link_path
         bank_en = parts[2] if len(parts) > 2 else None
         return url, bank_en
@@ -99,10 +99,10 @@ def parse_currency_table(html: str) -> List[BaseModel]:
                 'bank_name': bank_name, # /sberbank (link_info[2])
                 'bank_en': link_info[1], # /bank
                 'link': link_info[0], # ''
-                'usd_buy': usd_buy,
-                'usd_sell': usd_sell,
-                'eur_buy': eur_buy,
-                'eur_sell': eur_sell,
+                'usd_buy': usd_sell,    # зеркально: банк продаёт = клиент покупает
+                'usd_sell': usd_buy,    # зеркально: банк покупает = клиент продаёт
+                'eur_buy': eur_sell,   
+                'eur_sell': eur_buy,   
                 'update_time': update_time,
             }))
             logger.info(f"{bank_name=}")

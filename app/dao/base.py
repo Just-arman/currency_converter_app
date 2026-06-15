@@ -29,14 +29,11 @@ class BaseDAO(Generic[T]):
     @classmethod
     async def find_one_or_none_by_id(cls, session: AsyncSession, data_id: int):
         """Найти одну запись по ID."""
-        logger.info(f"Поиск {cls.model.__name__} с ID: {data_id}")
         try:
             query = select(cls.model).filter_by(id=data_id)
             result = await session.execute(query)
             record = result.scalar_one_or_none()
-            if record:
-                logger.info(f"Запись с ID {data_id} найдена.")
-            else:
+            if not record:
                 logger.info(f"Запись с ID {data_id} не найдена.")
             return record
         except SQLAlchemyError as e:

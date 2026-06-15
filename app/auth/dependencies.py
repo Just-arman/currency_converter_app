@@ -15,6 +15,7 @@ from app.exceptions import (
     TokenExpiredException,
     TokenNoFound
 )
+from app.logger import log
 
 
 def get_access_token(request: Request) -> str:
@@ -61,15 +62,15 @@ async def get_current_user(token: str = Depends(get_access_token), session: Asyn
 
     # получаем expire - время действия токена в секундах
     expire = payload.get("exp")
-    print(f"{expire=}")
+    # log.info(f"{expire=}")
 
     # получаем expire_time - время завершения действия токена 
     expire_time = datetime.fromtimestamp(int(expire), tz=timezone.utc)
-    print(f"{expire_time=}")
+    # log.info(f"{expire_time=}")
 
     # получаем текущее время
     time_now = datetime.now(timezone.utc)
-    print(f"{time_now=}")
+    # log.info(f"{time_now=}")
     if not expire or expire_time < time_now:                 
         raise TokenExpiredException                                           
     

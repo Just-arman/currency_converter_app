@@ -21,7 +21,7 @@ class AdminCurrencySchema(CurrencyRateSchema):
     updated_at: datetime
 
 
-class BankNameSchema(BaseModel):
+class BankEnSchema(BaseModel):
     bank_en: str
 
 
