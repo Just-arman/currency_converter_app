@@ -91,7 +91,7 @@ async def get_best_buy_rates(
     eur_result = [EurRateSchema.model_validate(r) for r in raw_result.get('eur', [])]
 
     result = BestRatesResponse(usd=usd_result, eur=eur_result)
-    return result
+    return result.model_dump(by_alias=True) # преобразуем объекты схемы в словарь с исп алиасов
 
 
 @router.get("/best_sell_rates/", summary="Получить топ банков с выгодными курсами для продажи валюты клиентом")

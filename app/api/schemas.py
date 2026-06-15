@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CurrencyRateSchema(BaseModel):
@@ -38,8 +38,10 @@ class EurRateSchema(BaseModel):
 
 
 class BestRatesResponse(BaseModel):
-    usd: list[UsdRateSchema] | None = None
-    eur: list[EurRateSchema] | None = None
+    usd: list[UsdRateSchema] | None = Field(None, alias='USD') # прописной алиас для лучшей видимости
+    eur: list[EurRateSchema] | None = Field(None, alias='EUR')
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class AdminCurrencyRateSchema(CurrencyRateSchema):
