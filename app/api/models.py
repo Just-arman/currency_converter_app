@@ -25,4 +25,4 @@ class CurrencyRate(Base):
     update_time: Mapped[str]
     
     def __repr__(self):
-        return f"{self.__class__.__name__}(bank={self.bank_name})"
+        return f"{self.__class__.__name__}(bank_name={self.bank_name})"

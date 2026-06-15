@@ -51,34 +51,6 @@ async def get_currency_by_bank_en(
     return currencies
 
 
-@router.get("/best_buy_rate/{currency_type}", summary="Получить банк с самым низким курсом для покупки валюты клиентом")
-async def get_best_bank_buy_rate(
-        currency_type: str = Path(description="Название валюты на английском языке"),
-        user_data: User = Depends(get_current_user),
-        session: AsyncSession = SessionDep
-) -> BestRateResponse:
-    """Возвращает банк с наиболее выгодным курсом для покупки валюты клиентом."""
-    currency_type = validate_currency_type(currency_type)
-    result = await CurrencyRateDAO.find_best_buy_rate(session=session, currency_type=currency_type.lower())
-    if not result or not result.banks:
-        raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
-    return result
-
-
-@router.get("/best_sell_rate/{currency_type}", summary="Получить банк с самым высоким курсом для продажи валюты клиентом")
-async def get_best_bank_sell_rate(
-        currency_type: str = Path(description="Название валюты на английском языке"),
-        user_data: User = Depends(get_current_user),
-        session: AsyncSession = SessionDep
-) -> BestRateResponse:
-    """Возвращает банк с наиболее выгодным курсом для продажи валюты клиентом."""
-    currency_type = validate_currency_type(currency_type)
-    result = await CurrencyRateDAO.find_best_sell_rate(session=session, currency_type=currency_type.lower())
-    if not result or not result.banks:
-        raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
-    return result
-
-
 @router.get("/best_buy_rates/", summary="Получить топ банков с выгодными курсами для покупки валюты клиентом")
 async def get_best_buy_rates(
         usd: bool = False,

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from .database import Base
+from app.logger import log
 
 
 # Объявляем типовой параметр T с ограничением, что это наследник Base
@@ -44,15 +45,15 @@ class BaseDAO(Generic[T]):
     @classmethod
     async def find_one_or_none(cls, session: AsyncSession, filters: BaseModel):
         """Найти одну запись по фильтрам."""
+        log.info(f"{filters=}")
         filter_dict = filters.model_dump(exclude_unset=True)
-        logger.info(f"Поиск одной записи {cls.model.__name__} по фильтрам: {filter_dict}")
+        log.info(f"{filter_dict=}")
         try:
             query = select(cls.model).filter_by(**filter_dict)
             result = await session.execute(query)
             record = result.scalar_one_or_none()
-            if record:
-                logger.info(f"Найдена запись по фильтрам: {filter_dict}")
-            else:
+            log.info(f"{record=}")
+            if not record:
                 logger.info(f"Не найдена запись по фильтрам: {filter_dict}")
             return record
         except SQLAlchemyError as e:

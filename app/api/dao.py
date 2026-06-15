@@ -124,53 +124,6 @@ class CurrencyRateDAO(BaseDAO):
 
 
     @classmethod
-    async def _find_best_rate(
-            cls,
-            currency_type: str,
-            operation: str, # 'buy' или 'sell'
-            session: AsyncSession
-    ) -> BestRateResponse | None:
-        """Находит лучший курс для конкретной валюты и операции"""
-        try:
-            field = settings.CURRENCY_FIELDS[currency_type][operation]
-            order_fields = desc(field) if operation == 'sell' else field
-
-            # запрос с фильтром на исключение нулевого значения валют
-            query = select(cls.model).where(getattr(cls.model, field) > 0).order_by(order_fields)
-            result = await session.execute(query)
-            rates = result.scalars().all()
-            log.debug(f"rates: {rates}")
-
-            # данная проверка нужна на случай, если бд пуста или сайт банка недоступен
-            if not rates:
-                return None
-
-            best_rate_value = getattr(rates[0], field)
-            log.debug(f"Содержимое best_rate_value: {best_rate_value}")
-            best_banks = [
-                bank.bank_name for bank in rates
-                if getattr(bank, field) == best_rate_value
-            ]
-            log.debug(f"best_banks: {best_banks}")
-            return BestRateResponse(rate=best_rate_value, banks=best_banks)
-        except SQLAlchemyError as e:
-            log.error(f"Ошибка поиска лучшего курса: {e}")
-            raise
-
-    
-    @classmethod
-    async def find_best_buy_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
-        """Находит лучший курс покупки клиентом. Чем ниже курс, тем выгоднее для клиента."""
-        return await cls._find_best_rate(currency_type, 'buy', session)
-
-
-    @classmethod
-    async def find_best_sell_rate(cls, currency_type: str, session: AsyncSession) -> BestRateResponse | None:
-        """Находит лучший курс продажи клиентом. Чем выше курс, тем выгоднее для клиента."""
-        return await cls._find_best_rate(currency_type, 'sell', session)
-    
-
-    @classmethod
     async def find_best_buy_rates(
             cls,
             session: AsyncSession,
