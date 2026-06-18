@@ -69,11 +69,11 @@ class Base(AsyncAttrs, DeclarativeBase):
 
         return result
 
-    def __repr__(self) -> str:
-        """Строковое представление объекта для удобства отладки."""
-        return (
-            f"<{self.__class__.__name__}("
-            f"id={self.id}, "
-            f"created_at={self.created_at}, "
-            f"updated_at={self.updated_at})>"
-        )
+    # def __repr__(self) -> str:
+    #     """Строковое представление объекта для удобства отладки."""
+    #     return (
+    #         f"<{self.__class__.__name__}("
+    #         f"id={self.id}, "
+    #         f"created_at={self.created_at}, "
+    #         f"updated_at={self.updated_at})>"
+    #     )

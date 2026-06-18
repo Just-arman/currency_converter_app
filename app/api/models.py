@@ -24,13 +24,12 @@ class CurrencyRate(Base):
     # Время последнего обновления
     update_time: Mapped[str]
     
-    # def __repr__(self):
-    #     return f"{self.__class__.__name__}(bank_name={self.bank_name})"
+    def __repr__(self):
+        return f"{self.__class__.__name__}(bank_name={self.bank_name})"
     
     def __repr__(self):
         return (
             f"{self.__class__.__name__}("
-            f"id={self.id}, "
             f"bank_name={self.bank_name}, "
             f"usd_buy={self.usd_buy}, "
             f"usd_sell={self.usd_sell}, "

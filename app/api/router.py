@@ -12,17 +12,17 @@ from app.api.schemas import (
     EurRateSchema,
     UsdRateSchema
 )
-from app.auth.dependencies import get_current_admin_user, get_current_user
-from app.auth.models import User
+from app.users.dependencies import get_current_admin_user, get_current_user
+from app.users.models import User
 from app.config import settings
 from app.dao.session_maker import SessionDep
 from app.logger import log
 
 
-router = APIRouter(prefix='/api', tags=['Api'])
+router_api = APIRouter(prefix='/api', tags=['Api'])
 
 
-@router.get("/all_currency/", summary="Получить информацию о валютных курсах всех банков")
+@router_api.get("/all_currency/", summary="Получить информацию о валютных курсах всех банков")
 async def get_all_currency(
         user_data: User = Depends(get_current_user),
         session: AsyncSession = SessionDep
@@ -31,7 +31,7 @@ async def get_all_currency(
     return await CurrencyRateDAO.find_all(session=session, filters=None)
 
 
-@router.get("/all_currency_admin/", summary="Получить подробную информацию о валютных курсах всех банков через роль админа")
+@router_api.get("/all_currency_admin/", summary="Получить подробную информацию о валютных курсах всех банков через роль админа")
 async def get_all_currency_admin(
         user_data: User = Depends(get_current_admin_user),
         session: AsyncSession = SessionDep
@@ -40,7 +40,7 @@ async def get_all_currency_admin(
     return await CurrencyRateDAO.find_all(session=session, filters=None)
 
 
-@router.get("/currency_by_bank_en/{bank_en}", summary="Получить информацию о валютных курсах конкретного банка по его англ названию")
+@router_api.get("/currency_by_bank_en/{bank_en}", summary="Получить информацию о валютных курсах конкретного банка по его англ названию")
 async def get_currency_by_bank_en(
         bank_en: str = Path(description="Название банка на английском языке"),
         user_data: User = Depends(get_current_user),
@@ -53,7 +53,7 @@ async def get_currency_by_bank_en(
     return currencies
 
 
-@router.get("/best_buy_rates/", summary="Получить топ банков с выгодными курсами для покупки валюты клиентом")
+@router_api.get("/best_buy_rates/", summary="Получить топ банков с выгодными курсами для покупки валюты клиентом")
 async def get_best_buy_rates(
         usd: bool = False,
         eur: bool = False,
@@ -81,20 +81,25 @@ async def get_best_buy_rates(
     if not raw_result :
         raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["not_found"])
     
-    result = {}
-    if 'usd' in raw_result:
-        result['usd'] = [UsdRateSchema.model_validate(r) for r in raw_result['usd']]
-    if 'eur' in raw_result:
-        result['eur'] = [EurRateSchema.model_validate(r) for r in raw_result['eur']]
+    # вариант 1
+    # result = {}
+    # if 'usd' in raw_result:
+    #     result['usd'] = [UsdRateSchema.model_validate(r) for r in raw_result['usd']]
+    # if 'eur' in raw_result:
+    #     result['eur'] = [EurRateSchema.model_validate(r) for r in raw_result['eur']]
+    # return result
 
+    # вариант 2
     usd_result = [UsdRateSchema.model_validate(r) for r in raw_result.get('usd', [])]
     eur_result = [EurRateSchema.model_validate(r) for r in raw_result.get('eur', [])]
 
-    result = BestRatesResponse(usd=usd_result, eur=eur_result)
-    return result.model_dump(by_alias=True) # преобразуем объекты схемы в словарь с исп алиасов
+    res = BestRatesResponse(usd=usd_result, eur=eur_result)
+    # log.debug(f"{res=}")
+    result = res.model_dump(by_alias=True) # преобразуем объекты схемы в словарь с исп алиасов
+    return result
 
 
-@router.get("/best_sell_rates/", summary="Получить топ банков с выгодными курсами для продажи валюты клиентом")
+@router_api.get("/best_sell_rates/", summary="Получить топ банков с выгодными курсами для продажи валюты клиентом")
 async def get_best_sell_rates(
         usd: bool = False,
         eur: bool = False,

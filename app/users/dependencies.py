@@ -4,14 +4,14 @@ from fastapi import Depends, HTTPException, Request, status
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dao import UsersDAO
-from app.auth.models import User
+from app.users.dao import UsersDAO
+from app.users.models import User
 from app.config import settings
 from app.dao.session_maker import SessionDep
 from app.exceptions import (
     ForbiddenException, 
     NoJwtException,
-    NoUserIdException, 
+    UserNotFoundByIDException, 
     TokenExpiredException,
     TokenNoFound
 )
@@ -76,7 +76,7 @@ async def get_current_user(token: str = Depends(get_access_token), session: Asyn
     
     user_id = payload.get("sub")
     if not user_id:
-        raise NoUserIdException
+        raise UserNotFoundByIDException
 
     user = await UsersDAO.find_one_or_none_by_id(data_id=int(user_id), session=session)
     if not user:

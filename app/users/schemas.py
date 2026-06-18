@@ -11,16 +11,14 @@ from pydantic import (
     model_validator
 )
 
-from app.auth.utils import get_password_hash
 
-
-class EmailModel(BaseModel):
+class SUserEmail(BaseModel):
     email: EmailStr = Field(description="Электронная почта")
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserBase(EmailModel):
+class SUserBase(SUserEmail):
     phone_number: str = Field(description="Номер телефона в международном формате, начинающийся с '+'")
     first_name: str = Field(min_length=3, max_length=50, description="Имя, от 3 до 50 символов")
     last_name: str = Field(min_length=3, max_length=50, description="Фамилия, от 3 до 50 символов")
@@ -33,7 +31,7 @@ class UserBase(EmailModel):
         return value
 
 
-class SUserRegister(UserBase):
+class SUserRegister(SUserBase):
     password: str = Field(min_length=5, max_length=50, description="Пароль, от 5 до 50 знаков")
     confirm_password: str = Field(min_length=5, max_length=50, description="Повторите пароль")
 
@@ -42,72 +40,62 @@ class SUserRegister(UserBase):
     def check_password(self) -> Self:
         if self.password != self.confirm_password:
             raise ValueError("Пароли не совпадают")
-        self.password = get_password_hash(self.password)  # хешируем пароль до сохранения в базе данных
         return self
 
 
-class SUserAddDB(UserBase):
+class SUserAddDB(SUserBase):
     email: EmailStr = Field(description="Электронная почта")
     password: str = Field(min_length=5, description="Пароль в формате HASH-строки")
     
     model_config = ConfigDict(from_attributes=True)
 
 
-class SUserAuth(EmailModel):
+class SUserAuth(SUserEmail):
     password: str = Field(min_length=5, max_length=50, description="Пароль, от 5 до 50 знаков")
 
 
-class UserDeleteId(BaseModel):
+class SAuthResponse(BaseModel):
+    ok: bool
+    message: str
+
+
+class SUserID(BaseModel):
+    id: int
+
+
+class SUserDeleteId(BaseModel):
     id: int = Field(gt=0)
 
 
-class RoleModel(BaseModel):
+class SRole(BaseModel):
     id: int = Field(description="Идентификатор роли")
     name: str = Field(description="Название роли")
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class RoleModelUpdate(BaseModel):
-    id: int | None = Field(None, description="Идентификатор роли")
+class SUserRoleUpdate(BaseModel):
     name: str | None = Field(None, description="Название роли")
 
     model_config = ConfigDict(from_attributes=True)
 
-    # валидатор для приравнивания значения 0 к отсутствующему значению
-    @field_validator("id", mode="before")
-    @classmethod
-    def normalize_zero_to_none(cls, v):
-        if v in (0, "0", ""):
-            return None
-        return v
-
-    # валидатор для допустимости пустого значения и любого регистра первой буквы названия роли
+    # валидатор для допустимости любого регистра первой буквы названия роли
+    # и проверка на пустое значение
     @field_validator("name", mode="before")
     @classmethod
     def normalize_name(cls, v):
-        if v is None:
-            return None
-        if isinstance(v, str) and (not v.strip() or v == "string"):
-            return None
+        if not isinstance(v, str) or not v.strip() or v == "string":
+            raise ValueError("Название роли не может быть пустым")
         return v.capitalize()
+    
 
-
-class RoleUpdateByID(BaseModel):
+class SRoleUpdateByID(BaseModel):
     role_id: int
 
 
-class RoleUpdateByName(BaseModel):
-    name: str
-
-
-class UserID(BaseModel):
-    id: int
-
-
-class SUserInfo(UserBase):
+class SUserRoleRead(SUserBase):
     id: int = Field(description="Идентификатор пользователя")
-    role: RoleModel = Field(exclude=True)
+    role: SRole = Field(exclude=True)
 
     @computed_field
     def role_name(self) -> str:

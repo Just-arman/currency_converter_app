@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta, timezone
-
+from passlib.context import CryptContext
 from fastapi.responses import Response
 from jose import jwt
 
-from app.auth.utils import verify_password
 from app.config import settings
+from app.logger import log
 
 
-# улучшенный прежний формат
+
+# улучшенный прежний формат создания токена
 def create_tokens(data: dict) -> dict:
     now = datetime.now(timezone.utc)
 
@@ -23,12 +24,12 @@ def create_tokens(data: dict) -> dict:
         return token_encode
 
     return {
-        "access_token": _encode("access", now + timedelta(hours=1)),
+        "access_token": _encode("access", now + timedelta(hours=3)),
         "refresh_token": _encode("refresh", now + timedelta(hours=24)),
     }
 
 
-# улучшенный прежний формат
+# улучшенный прежний формат установки токена в cookies ответа
 def set_tokens(response: Response, user_id: int):
     tokens = create_tokens(data={"sub": str(user_id)})
     cookie_params = {"httponly": True, "secure": True, "samesite": "lax"}
@@ -37,7 +38,16 @@ def set_tokens(response: Response, user_id: int):
     response.set_cookie(key="user_refresh_token", value=tokens["refresh_token"], **cookie_params)
 
 
-# прежний формат
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+# прежний формат аутентификации пользователя
 async def authenticate_user(user, password):
     if not user or verify_password(plain_password=password, hashed_password=user.password) is False:
         return None

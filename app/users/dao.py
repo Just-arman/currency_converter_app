@@ -1,4 +1,4 @@
-from app.auth.models import Role, User
+from app.users.models import Role, User
 from app.dao.base import BaseDAO
 
 

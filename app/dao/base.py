@@ -26,7 +26,6 @@ class BaseDAO(Generic[T]):
         if cls.model is None:
             raise ValueError(f"В классе {cls.__name__} должна быть указана модель")
 
-
     @classmethod
     async def find_one_or_none_by_id(cls, session: AsyncSession, data_id: int):
         """Найти одну запись по ID."""
@@ -41,25 +40,20 @@ class BaseDAO(Generic[T]):
             logger.error(f"Ошибка при поиске записи с ID {data_id}: {e}")
             raise
 
-
     @classmethod
     async def find_one_or_none(cls, session: AsyncSession, filters: BaseModel):
         """Найти одну запись по фильтрам."""
-        log.info(f"{filters=}")
         filter_dict = filters.model_dump(exclude_unset=True)
-        log.info(f"{filter_dict=}")
         try:
             query = select(cls.model).filter_by(**filter_dict)
             result = await session.execute(query)
             record = result.scalar_one_or_none()
-            log.info(f"{record=}")
             if not record:
                 logger.info(f"Не найдена запись по фильтрам: {filter_dict}")
             return record
         except SQLAlchemyError as e:
             logger.error(f"Ошибка при поиске записи по фильтрам {filter_dict}: {e}")
             raise
-
 
     @classmethod
     async def find_all(cls, session: AsyncSession, filters: BaseModel | None = None):
@@ -79,12 +73,11 @@ class BaseDAO(Generic[T]):
             logger.error(f"Ошибка при поиске всех записей по фильтрам {filter_dict}: {e}")
             raise
 
-
     @classmethod
     async def add(cls, session: AsyncSession, values: BaseModel):
         """Добавить одну запись."""
         values_dict = values.model_dump(exclude_unset=True)
-        logger.info(f"Добавление записи {cls.model.__name__} с параметрами: {values_dict}")
+        logger.info(f"Добавление в базу данных записи с параметрами: {values_dict}")
         new_instance = cls.model(**values_dict)
         session.add(new_instance)
         try:
@@ -95,7 +88,6 @@ class BaseDAO(Generic[T]):
             logger.error(f"Ошибка при добавлении записи: {e}")
             raise e
         return new_instance
-
 
     @classmethod
     async def add_many(cls, session: AsyncSession, instances: List[BaseModel]):
@@ -112,7 +104,6 @@ class BaseDAO(Generic[T]):
             logger.error(f"Ошибка при добавлении нескольких записей: {e}")
             raise e
         return new_instances
-
 
     @classmethod
     async def update(cls, session: AsyncSession, filters: BaseModel, values: BaseModel):
@@ -135,7 +126,6 @@ class BaseDAO(Generic[T]):
             await session.rollback()
             logger.error(f"Ошибка при обновлении записей: {e}")
             raise e
-
 
     @classmethod
     async def delete(cls, session: AsyncSession, filters: BaseModel):

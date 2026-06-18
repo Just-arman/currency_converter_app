@@ -4,19 +4,7 @@ from fastapi import HTTPException, status
 # Пользователь уже существует
 UserAlreadyExistsException = HTTPException(
     status_code=status.HTTP_409_CONFLICT,
-    detail='Пользователь с такими данными уже существует'
-)
-
-# Пользователь не найден
-UserNotFoundException = HTTPException(
-    status_code=status.HTTP_404_NOT_FOUND,
-    detail='Пользователь не найден'
-)
-
-# Отсутствует идентификатор пользователя
-UserIdNotFoundException = HTTPException(
-    status_code=status.HTTP_404_NOT_FOUND,
-    detail='Отсутствует идентификатор пользователя'
+    detail='Пользователь с такими данными уже зарегистрирован в системе'
 )
 
 # Неверная почта или пароль
@@ -25,16 +13,22 @@ IncorrectEmailOrPasswordException = HTTPException(
     detail='Неверная почта или пароль'
 )
 
+# Некорректная почта
+EmailIncorrectException = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail='Почта указана некорректно'
+)
+
 # Токен истек
 TokenExpiredException = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail='Токен истек'
 )
 
-# Некорректный формат токена
+# Невалидный формат токена
 InvalidTokenFormatException = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST,
-    detail='Некорректный формат токена'
+    detail='Невалидный формат токена'
 )
 
 # Токен отсутствует в заголовке
@@ -46,17 +40,17 @@ TokenNoFound = HTTPException(
 # Невалидный JWT токен
 NoJwtException = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
-    detail='Токен не валидный'
+    detail='Токен невалидный'
 )
 
 # Не найден ID пользователя
-NoUserIdException = HTTPException(
+UserNotFoundByIDException = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
-    detail='Не найден ID пользователя'
+    detail='Не найден пользователь с таким ID'
 )
 
 # Недостаточно прав
 ForbiddenException = HTTPException(
     status_code=status.HTTP_403_FORBIDDEN,
-    detail='Недостаточно прав'
+    detail='Недостаточно прав. Только админы имеют право на такое действие.'
 )

@@ -7,8 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from app.api.router import router as router_api
-from app.auth.router import router as router_auth
+from app.api.router import router_api
+from app.users.router import router_auth, router_users
 from app.parser.scheduler import add_or_update_data_to_db
 
 
@@ -24,7 +24,6 @@ async def lifespan(app: FastAPI):
         scheduler.add_job(
             add_or_update_data_to_db,
             trigger=IntervalTrigger(minutes=30),
-            # trigger=IntervalTrigger(seconds=5),
             id="currency_update_job",
             replace_existing=True,
         )
@@ -50,14 +49,14 @@ def register_routers(app: FastAPI) -> None:
 
     # Подключение роутеров
     app.include_router(router_root)
-    app.include_router(router_auth)
     app.include_router(router_api)
+    app.include_router(router_auth)
+    app.include_router(router_users)
 
 
 def create_app() -> FastAPI:
     """
-   Создание и конфигурация FastAPI приложения.
-   Будет возвращено: Сконфигурированное приложение FastAPI.
+   Создание приложения с конфигурацией FastAPI.
     """
     app = FastAPI(lifespan=lifespan)
 
