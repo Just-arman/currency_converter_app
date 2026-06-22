@@ -7,21 +7,16 @@ from app.config import settings
 from app.logger import log
 
 
-
 # улучшенный прежний формат создания токена
 def create_tokens(data: dict) -> dict:
     now = datetime.now(timezone.utc)
 
-    def _encode(token_type: str, expire: datetime) -> str:
-        # прежний формат
-        payload = data.copy()
-        payload.update({"exp": int(expire.timestamp()), "type": token_type})
-
+    def _encode(token_type: str, expire: datetime) -> str:  
         # новый формат
-        payload_upd = {**data, "exp": int(expire.timestamp()), "type": token_type}
+        payload = {**data, "exp": int(expire.timestamp()), "type": token_type}
 
-        token_encode = jwt.encode(payload_upd, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-        return token_encode
+        token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        return token
 
     return {
         "access_token": _encode("access", now + timedelta(hours=3)),
@@ -38,17 +33,20 @@ def set_tokens(response: Response, user_id: int):
     response.set_cookie(key="user_refresh_token", value=tokens["refresh_token"], **cookie_params)
 
 
+# Настройка алгоритма bcrypt для безопасного хеширования и проверки паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Хэшируем пароль для сохранения в БД
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
+# Проверяем соответствие введенного пароля его хэшированной форме из БД
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
 # прежний формат аутентификации пользователя
 async def authenticate_user(user, password):
-    if not user or verify_password(plain_password=password, hashed_password=user.password) is False:
+    if not user or not verify_password(plain_password=password, hashed_password=user.password):
         return None
     return user

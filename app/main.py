@@ -49,9 +49,9 @@ def register_routers(app: FastAPI) -> None:
 
     # Подключение роутеров
     app.include_router(router_root)
-    app.include_router(router_api)
     app.include_router(router_auth)
     app.include_router(router_users)
+    app.include_router(router_api)
 
 
 def create_app() -> FastAPI:

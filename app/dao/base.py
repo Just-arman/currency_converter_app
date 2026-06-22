@@ -48,8 +48,8 @@ class BaseDAO(Generic[T]):
             query = select(cls.model).filter_by(**filter_dict)
             result = await session.execute(query)
             record = result.scalar_one_or_none()
-            if not record:
-                logger.info(f"Не найдена запись по фильтрам: {filter_dict}")
+            # if not record:
+            #     logger.info(f"Не найдена запись по фильтрам: {filter_dict}")
             return record
         except SQLAlchemyError as e:
             logger.error(f"Ошибка при поиске записи по фильтрам {filter_dict}: {e}")
