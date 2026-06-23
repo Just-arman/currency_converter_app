@@ -36,10 +36,10 @@ class Base(AsyncAttrs, DeclarativeBase):
         onupdate=func.now()
     )
 
-    @declared_attr
-    def __tablename__(cls) -> str:
-        """Cоздает имя модели в имя таблицы во множественном числе."""
-        return cls.__name__.lower() + 's'
+    # @declared_attr
+    # def __tablename__(cls) -> str:
+    #     """Создает имя модели преобразуя его во множественное число."""
+    #     return cls.__name__.lower() + 's'
 
     def to_dict(self, exclude_none: bool = False):
         """

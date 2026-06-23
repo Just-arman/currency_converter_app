@@ -5,7 +5,7 @@ from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.users.dao import UsersDAO
-from app.users.models import User
+from app.users.models import Users
 from app.config import settings
 from app.dao.session_maker import SessionDep
 from app.exceptions import (
@@ -37,11 +37,11 @@ def get_refresh_token(request: Request) -> str:
 async def check_refresh_token(
         token: str = Depends(get_refresh_token),
         session: AsyncSession = SessionDep
-) -> User:
+) -> Users:
     """ Проверяем refresh_token и возвращаем пользователя."""
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id = payload.get("sub")
+        decoded_payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id = decoded_payload.get("sub")
         if not user_id:
             raise NoJwtException
 
@@ -84,7 +84,8 @@ async def get_current_user(token: str = Depends(get_access_token), session: Asyn
     return user
 
 
-async def get_current_admin_user(current_user: User = Depends(get_current_user)):
+async def get_current_admin_user(current_user: Users = Depends(get_current_user)):
     if current_user.role.id in [3, 4]:
+        log.debug(f"{current_user=}")
         return current_user
     raise ForbiddenException

@@ -120,7 +120,7 @@ class TestUpdateUserRole:
     """Тесты для обновления роли пользователя."""
 
     async def test_successful_role_update(self, async_client, mock_user, mock_role):
-        with patch("app.auth.router.RoleDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role, \
+        with patch("app.auth.router.RolesDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role, \
              patch("app.auth.router.UsersDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_user, \
              patch("app.auth.router.UsersDAO.update", new_callable=AsyncMock):
             mock_find_role.return_value = mock_role
@@ -134,19 +134,19 @@ class TestUpdateUserRole:
         assert response.status_code == 400
 
     async def test_id_and_name_mismatch(self, async_client, mock_role):
-        with patch("app.auth.router.RoleDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role:
+        with patch("app.auth.router.RolesDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role:
             mock_find_role.return_value = None
             response = await async_client.patch("/auth/1/role", json={"id": 1, "name": "wrongname"})
             assert response.status_code == 400
 
     async def test_role_not_found_by_id(self, async_client):
-        with patch("app.auth.router.RoleDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role:
+        with patch("app.auth.router.RolesDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role:
             mock_find_role.return_value = None
             response = await async_client.patch("/auth/1/role", json={"id": 5})
             assert response.status_code == 404
 
     async def test_user_not_found(self, async_client, mock_role):
-        with patch("app.auth.router.RoleDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role, \
+        with patch("app.auth.router.RolesDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role, \
              patch("app.auth.router.UsersDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_user:
             mock_find_role.return_value = mock_role
             mock_find_user.return_value = None
@@ -154,7 +154,7 @@ class TestUpdateUserRole:
             assert response.status_code == 404
 
     async def test_same_role(self, async_client, mock_user, mock_role):
-        with patch("app.auth.router.RoleDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role, \
+        with patch("app.auth.router.RolesDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role, \
              patch("app.auth.router.UsersDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_user:
             mock_find_role.return_value = mock_role
             mock_find_user.return_value = mock_user

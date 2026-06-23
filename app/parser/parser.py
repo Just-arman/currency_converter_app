@@ -36,9 +36,9 @@ async def fetch_html(url: str, session: ClientSession, retries: int = 3) -> Opti
 
 # Функция для извлечения информации из ссылки
 def get_link_info(link_anchor):
+    EXCLUDED_BANK_ENS = {'listing'}
     link_path = link_anchor.get('href') if link_anchor else None
     if link_path:
-        EXCLUDED_BANK_ENS = {'listing'}
         # для извлечения банка из нестандартного url
         if 'go?url=' in link_path:
             parsed = urlparse(link_path)
