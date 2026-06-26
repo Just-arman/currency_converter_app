@@ -9,7 +9,7 @@ from loguru import logger
 
 from app.api.router import router_api
 from app.users.router import router_auth, router_users
-from app.parser.scheduler import add_or_update_data_to_db
+from app.parser.currency_sync import launch_sync_currencies
 
 
 scheduler = AsyncIOScheduler()
@@ -18,11 +18,11 @@ scheduler = AsyncIOScheduler()
 async def lifespan(app: FastAPI):
     scheduler = AsyncIOScheduler()
     try:
-        await add_or_update_data_to_db()
+        await launch_sync_currencies()
 
         # плановая задача с защитой от дублирования задачи если lifespan вызовется повторно
         scheduler.add_job(
-            add_or_update_data_to_db,
+            launch_sync_currencies,
             trigger=IntervalTrigger(minutes=30),
             id="currency_update_job",
             replace_existing=True,

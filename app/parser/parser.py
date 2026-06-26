@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Optional
+from typing import Optional
 
 from aiohttp import ClientError, ClientSession, ClientTimeout
 from bs4 import BeautifulSoup
@@ -61,7 +61,7 @@ def get_link_info(link_anchor):
 
 
 # Функция для парсинга таблицы с валютами
-def parse_currency_table(html: str) -> List[BaseModel]:
+def parse_currency_table(html: str) -> list[BaseModel]:
     soup = BeautifulSoup(html, 'html.parser')
 
     try:
@@ -113,7 +113,7 @@ def parse_currency_table(html: str) -> List[BaseModel]:
 
 
 # Функция для получения данных с одной страницы
-async def fetch_page_data(url: str, session: ClientSession) -> List[BaseModel]:
+async def fetch_page_data(url: str, session: ClientSession) -> list[BaseModel]:
     html = await fetch_html(url, session)
     if html:
         return parse_currency_table(html)
@@ -121,7 +121,7 @@ async def fetch_page_data(url: str, session: ClientSession) -> List[BaseModel]:
 
 
 # Функция для сбора данных с нескольких страниц асинхронно с обработкой ошибок
-async def fetch_all_currencies() -> List[BaseModel]:
+async def fetch_all_currencies() -> list[BaseModel]:
     all_currencies = []
     base_url = 'https://ru.myfin.by/currency?page='
 

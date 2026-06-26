@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from app.api.models import CurrencyRate
+from app.api.models import CurrencyRates
 from app.users.models import Roles, Users
 from app.config import database_url
 from app.dao.database import Base
