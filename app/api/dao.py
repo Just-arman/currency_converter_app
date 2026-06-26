@@ -45,6 +45,10 @@ class CurrencyRatesDAO(BaseDAO):
                 if not bank_en:
                     log.warning(f"Пропуск записи из-за отсутствия bank_en. Данные: {record_dict}")
                     continue
+            
+                if bank_en in parsed_bank_ens:
+                    log.warning(f"Пропуск дублирующейся записи для bank_en={bank_en} в рамках одного прогона")
+                    continue
 
                 parsed_records.append(record_dict)
                 parsed_bank_ens.add(bank_en)
