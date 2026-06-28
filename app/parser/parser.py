@@ -99,8 +99,8 @@ def parse_currency_table(html: str) -> list[BaseModel]:
                 'bank_name': bank_name, # /sberbank (link_info[2])
                 'bank_en': link_info[1], # /bank
                 'link': link_info[0], # ''
-                'usd_buy': usd_sell,    # зеркально: банк продаёт = клиент покупает
-                'usd_sell': usd_buy,    # зеркально: банк покупает = клиент продаёт
+                'usd_buy': usd_sell,    # зеркально: клиент покупает = банк продаёт
+                'usd_sell': usd_buy,    # зеркально: клиент продаёт = банк покупает
                 'eur_buy': eur_sell,   
                 'eur_sell': eur_buy,   
                 'update_time': update_time,

@@ -29,7 +29,10 @@ class Base(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP, 
+        server_default=func.now()
+    )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP,
         server_default=func.now(),

@@ -92,7 +92,7 @@ async def logout(response: Response):
 
 
 @router_users.get("/me/")
-async def get_me(user_data: Users = Depends(get_current_user)) -> SUserRoleRead:
+async def get_me(user_data: Users = Depends(get_current_user)) -> SUserRoleRead: # TODO нужна ли здесь session?
     return user_data
 
 

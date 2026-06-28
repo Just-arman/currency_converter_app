@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
-from sqlalchemy import DateTime, func
+from datetime import datetime
+from sqlalchemy import DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from app.dao.database import Base, float_col, str_uniq
 
@@ -27,4 +27,4 @@ class CurrencyRates(Base):
     update_time: Mapped[str] # Время последнего обновления
     
     def __repr__(self):
-        return f"{self.__class__.__name__}(bank_name={self.bank_name})"
+        return f"{self.__class__.__name__}"

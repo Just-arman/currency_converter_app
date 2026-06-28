@@ -3,9 +3,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class CurrencyRateSchema(BaseModel):
-    link: str
     bank_en: str
     bank_name: str
+    link: str
     usd_buy: float
     usd_sell: float
     eur_buy: float
@@ -15,33 +15,35 @@ class CurrencyRateSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UsdRateSchema(BaseModel):
-    link: str
+class CurrencyTypeSchema(BaseModel):
     bank_en: str
     bank_name: str
+    link: str
+    update_time: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class USDSchema(CurrencyTypeSchema):
     usd_buy: float
     usd_sell: float
-    update_time: str
-
-    model_config = ConfigDict(from_attributes=True)
 
 
-class EurRateSchema(BaseModel):
-    link: str
-    bank_en: str
-    bank_name: str
+class EURSchema(CurrencyTypeSchema):
     eur_buy: float
     eur_sell: float
-    update_time: str
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class BestRatesResponse(BaseModel):
-    usd: list[UsdRateSchema] | None = Field(None, alias='USD') # прописной алиас для лучшей видимости
-    eur: list[EurRateSchema] | None = Field(None, alias='EUR')
+    usd: list[USDSchema] | None = Field(None, alias='USD') # прописной алиас для лучшей видимости
+    eur: list[EURSchema] | None = Field(None, alias='EUR')
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class OperationRatesSchema(BaseModel):
+    buy: BestRatesResponse | None = None
+    sell: BestRatesResponse | None = None
 
 
 class AdminCurrencyRateSchema(CurrencyRateSchema):

@@ -22,42 +22,48 @@ class CurrencyRatesDAO(BaseDAO):
     async def bulk_update_currency(cls, records: list[BaseModel], session: AsyncSession) -> int:
         """Синхронизация валютных курсов (insert + update + delete) в бд"""
         try:
-            # логирование дублирующихся банков
-            # log.debug(f"Содержимое records: {records}")
-            bank_en_counts = Counter(record.model_dump().get("bank_en") for record in records)
-            log.debug(f"Содержимое bank_en_counts: {bank_en_counts}")
-
-            # bank_en_counts_items = bank_en_counts.items()
-            # log.debug(f"Содержимое bank_en_counts_items: {bank_en_counts_items}")
-
-            duplicates = {k: v for k, v in bank_en_counts.items() if v > 1}
-            if duplicates:
-                log.warning(f"Дублирующиеся банки: {duplicates}")
 
             # 1. Подготовка данных
+
+            # формируем словарь с использованием класса Counter(), чтобы определить
+            # сколько раз каждый банк встречается в парсинге
+
+            records_dict = [record.model_dump(exclude_unset=True) for record in records]
+
+            bank_en_counts = Counter(record.get("bank_en") for record in records_dict)
+            duplicates = {k: v for k, v in bank_en_counts.items() if v > 1}
+            if duplicates:
+                log.warning(f"Дублирующиеся банки с англ названием: {duplicates}")
+            
+            bank_name_counts = Counter(record.get("bank_name") for record in records_dict)
+            duplicate_names = {k: v for k, v in bank_name_counts.items() if v > 1}
+            if duplicate_names:
+                log.warning(f"Дублирующиеся банки с рус названием: {duplicate_names}")
+
+
             parsed_records = []
             parsed_bank_ens = set()
+            parsed_bank_names = set()
 
-            for record in records:
-                record_dict = record.model_dump(exclude_unset=True)
-                bank_en = record_dict.get("bank_en")
+            for record in records_dict:
+                bank_en = record.get("bank_en")
+                bank_name = record.get("bank_name")
                 
-                if not bank_en:
-                    log.warning(f"Пропуск записи из-за отсутствия bank_en. Данные: {record_dict}")
-                    continue
-            
-                if bank_en in parsed_bank_ens:
-                    log.warning(f"Пропуск дублирующейся записи для bank_en={bank_en} в рамках одного прогона")
+                if not bank_en or not bank_name:
+                    log.warning(f"Пропуск записи из-за отсутствия банков. Данные: {record}")
                     continue
 
-                parsed_records.append(record_dict)
+                if bank_en in parsed_bank_ens: 
+                    log.warning(f"Пропуск дублирующейся записи для {bank_en} в рамках одного прогона")
+                    continue
+                
+                if bank_name in parsed_bank_names:
+                    log.warning(f"Пропуск дублирующейся записи для {bank_name} в рамках одного прогона")
+                    continue
+
+                parsed_records.append(record)
                 parsed_bank_ens.add(bank_en)
-
-            # 2. Получаем банки из БД
-            # result_en = await session.execute(select(cls.model.bank_en))
-            # result_name = await session.execute(select(cls.model.bank_name))
-            # db_bank_ens = set(result_en.scalars().all())
-            # db_bank_names = set(result_name.scalars().all())
+                parsed_bank_names.add(bank_name)
 
             # 2. Получаем банки из БД вместе с их текущим состоянием (is_active, last_seen_at) —
             # это нужно, чтобы дальше определить, кого пометить неактивным, а кого удалить
@@ -69,20 +75,11 @@ class CurrencyRatesDAO(BaseDAO):
                     cls.model.last_seen_at,
                 )
             )
-            # for debugging
-            scalar_result = result.scalars()
-            bank_ens_list = scalar_result.all()
-            log.debug(f"{scalar_result=}")
-            log.debug(f"{bank_ens_list=}")
 
-            db_banks = {row.bank_en: row for row in result.all()} # TODO почему не через scalars().all() достаешь данные?
-            log.debug(f"{db_banks=}")
-            # db_banks_sc = {row.bank_en: row for row in result.scalars()}
-            # log.debug(f"{db_banks_sc=}")
-            # db_banks_sc_all = {row.bank_en: row for row in result.scalars().all()}
-            # log.debug(f"{db_banks_sc_all=}")
+            db_banks = {row.bank_en: row for row in result.all()}
+            # log.debug(f"{db_banks=}")
 
-            db_bank_ens = set(db_banks.keys()) 
+            db_bank_ens = {row.bank_en for row in db_banks.values()}
             db_bank_names = {row.bank_name for row in db_banks.values()}
 
             # 3. Определяем переменные для дальнейшего использования
@@ -130,20 +127,24 @@ class CurrencyRatesDAO(BaseDAO):
 
                 stmt = update(cls.model).where(cls.model.bank_en == bank_en).values(**update_data)
                 result = await session.execute(stmt)
-                if result.rowcount > 0 and bank_en not in updated_banks:
-                    counted_banks += 1
+                if result.rowcount > 0:
                     updated_banks.add(bank_en)
+            log.info(f"Обновлено банков: {len(updated_banks)}")
+            counted_banks += len(updated_banks)
 
             # 5. INSERT (добавляем новые)
             new_records = [r for r in parsed_records if r["bank_en"] in to_add]
-            log.debug(f"{new_records=}")
+            # log.debug(f"{new_records=}")
+            # для отображения двух конфликтующих банков при ошибке нарушения уникальности в бд
+            # for r in new_records:
+            #     log.debug(f"new_record: bank_en={r['bank_en']!r}, bank_name={r['bank_name']!r}")
             if new_records:
                 for r in new_records:
                     r["last_seen_at"] = datetime_now
                     r["is_active"] = True
                 await session.execute(insert(cls.model), new_records)
-                log.info(f"Добавлено банков: {len(new_records)}")
-                counted_banks += len(new_records)
+            log.info(f"Добавлено банков: {len(new_records)}")
+            counted_banks += len(new_records)
 
             # 6. ДЕАКТИВАЦИЯ + ОТЛОЖЕННОЕ УДАЛЕНИЕ: банки, не встречавшиеся 
             # в парсинге дольше порога, помечаем неактивными вместо удаления 
