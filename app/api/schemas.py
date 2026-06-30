@@ -52,9 +52,5 @@ class AdminCurrencyRateSchema(CurrencyRateSchema):
     updated_at: datetime
 
 
-class BankEnSchema(BaseModel):
-    bank_en: str
-
-
 class Message(BaseModel):
     text: str

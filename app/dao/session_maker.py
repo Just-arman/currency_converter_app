@@ -4,7 +4,6 @@ from typing import AsyncGenerator, Callable, Optional
 
 from fastapi import Depends, HTTPException
 from loguru import logger
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.dao.database import async_session_maker
@@ -22,14 +21,13 @@ class DatabaseSessionManager:
     @asynccontextmanager
     async def create_session(self) -> AsyncGenerator[AsyncSession, None]:
         """
-        Создаёт и предоставляет новую сессию базы данных.
-        Гарантирует закрытие сессии по завершении работы.
+        Создаёт новую сессию бд и передает её другому коду на работу с ней.
         """
         async with self.session_maker() as session:
             try:
                 yield session
             except HTTPException:
-                raise  # пробрасываем HTTP-исключения без логирования
+                raise
             except Exception as e:
                 logger.error(f"Ошибка при создании сессии базы данных: {e}")
                 raise
@@ -44,6 +42,9 @@ class DatabaseSessionManager:
         try:
             yield
             await session.commit()
+        except HTTPException:
+            await session.rollback()
+            raise
         except Exception as e:
             await session.rollback()
             logger.exception(f"Ошибка транзакции: {e}")
@@ -66,36 +67,20 @@ class DatabaseSessionManager:
 
     def connection(self, isolation_level: Optional[str] = None, commit: bool = True):
         """
-        Декоратор для управления сессией с возможностью настройки уровня изоляции и коммита.
+        Декоратор для управления сессией вне FastAPI (фоновые задачи, скрипты, шедулеры)
+        с возможностью настройки уровня изоляции
 
-        Параметры:
-        - `isolation_level`: уровень изоляции для транзакции (например, "SERIALIZABLE").
-        - `commit`: если `True`, выполняется коммит после вызова метода.
+        - параметр `isolation_level`: уровень изоляции для транзакции (например, "SERIALIZABLE").
         """
-
         def decorator(method):
             @wraps(method)
             async def wrapper(*args, **kwargs):
-                async with self.session_maker() as session:
-                    try:
-                        if isolation_level:
-                            await session.execute(text(f"SET TRANSACTION ISOLATION LEVEL {isolation_level}"))
-
-                        result = await method(*args, session=session, **kwargs)
-
-                        if commit:
-                            await session.commit()
-
-                        return result
-                    except Exception as e:
-                        await session.rollback()
-                        logger.error(f"Ошибка при выполнении транзакции: {e}")
-                        raise
-                    finally:
-                        await session.close()
-
+                async with self.create_session() as session:
+                    if commit:
+                        async with self.transaction(session):
+                            return await method(*args, session=session, **kwargs)
+                    return await method(*args, session=session, **kwargs)
             return wrapper
-
         return decorator
 
     @property

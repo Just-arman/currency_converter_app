@@ -5,7 +5,6 @@ from app.api.dao import CurrencyRatesDAO
 from app.api.schemas import (
     CurrencyRateSchema,
     AdminCurrencyRateSchema,
-    BankEnSchema,
     OperationRatesSchema,
 )
 from app.api.service import build_operation_rates
@@ -25,7 +24,7 @@ async def get_all_currency(
         session: AsyncSession = SessionDep
 ) -> list[CurrencyRateSchema]:
     """Возвращает актуальные курсы валют всех банков."""
-    return await CurrencyRatesDAO.find_all(session=session, filters=None)
+    return await CurrencyRatesDAO.find_all(session=session)
 
 
 @router_api.get("/all_currency_admin/", summary="Получить подробную информацию о валютных курсах всех банков через роль админа")
@@ -34,7 +33,7 @@ async def get_all_currency_admin(
         session: AsyncSession = SessionDep
 ) -> list[AdminCurrencyRateSchema]:
     """Возвращает расширенную информацию о курсах валют (только для админов)."""
-    return await CurrencyRatesDAO.find_all(session=session, filters=None)
+    return await CurrencyRatesDAO.find_all(session=session)
 
 
 @router_api.get("/currency_by_bank_en/{bank_en}", summary="Получить информацию о валютных курсах конкретного банка по его англ названию")
@@ -44,8 +43,8 @@ async def get_currency_by_bank_en(
         session: AsyncSession = SessionDep
 ) -> CurrencyRateSchema | None:
     """Возвращает курсы валют конкретного банка по его английскому названию."""
-    currencies = await CurrencyRatesDAO.find_one_or_none(session=session, filters=BankEnSchema(bank_en=bank_en.lower()))
-    if not currencies:
+    currencies = await CurrencyRatesDAO.find_one_or_none(session=session, bank_en=bank_en.lower())
+    if not currencies or not currencies.is_active:
         raise HTTPException(status_code=404, detail=settings.ERROR_MESSAGES["bank_not_found"])
     return currencies
 
@@ -66,7 +65,7 @@ async def get_best_rates(
     if not buy and not sell:
         raise HTTPException(status_code=400, detail="Укажите хотя бы одну операцию: buy или sell")
 
-    total = await CurrencyRatesDAO.get_total_count(session=session)
+    total = await CurrencyRatesDAO.count_records(session=session)
     if count > total:
         raise HTTPException(
             status_code=400,

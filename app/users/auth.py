@@ -4,7 +4,6 @@ from fastapi.responses import Response
 from jose import jwt
 
 from app.config import settings
-from app.logger import log
 
 
 # улучшенный прежний формат создания токена

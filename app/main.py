@@ -12,8 +12,6 @@ from app.users.router import router_auth, router_users
 from app.parser.currency_sync import launch_sync_currencies
 
 
-scheduler = AsyncIOScheduler()
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scheduler = AsyncIOScheduler()

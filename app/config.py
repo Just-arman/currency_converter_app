@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     ALGORITHM: str
     VALID_CURRENCIES: list = ["usd", "eur"]
     ERROR_MESSAGES: dict = {
-        "currency_type": "Некорректный тип валюты. Используйте 'usd' или 'eur' без пробелов и лишних символов.",
+        "currency_type": "Некорректный тип валюты. Используйте 'usd' или 'eur'",
         "range": "Неверно задан диапазон.",
         "not_found": "Не найдены курсы валют.",
         "bank_not_found": "Банк не найден."
@@ -39,4 +39,4 @@ class Settings(BaseSettings):
 
 settings = Settings()
 database_url = settings.DB_URL
-# log.info(settings.DB_URL)
+# log.debug(settings.DB_URL)

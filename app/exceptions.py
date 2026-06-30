@@ -54,3 +54,8 @@ ForbiddenException = HTTPException(
     status_code=status.HTTP_403_FORBIDDEN,
     detail='Недостаточно прав. Только админы имеют право на такое действие.'
 )
+
+BankNotFound = HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail='Указанный банк не найден.'
+)

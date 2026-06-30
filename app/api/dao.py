@@ -172,7 +172,7 @@ class CurrencyRatesDAO(BaseDAO):
             await session.commit()
 
             # Подсчет количества банков в бд через функцию с прямым подсчетом банков в бд
-            total = await cls.get_total_count(session)
+            total = await cls.count_records(session)
             if total == counted_banks:
                 log.info("Результаты подсчетов банков одинаковы. ")
             else:
@@ -244,10 +244,15 @@ class CurrencyRatesDAO(BaseDAO):
             logger.error(f"Ошибка при получении лучших курсов продажи валюты: {e}")
             raise
 
-    
     @classmethod
-    async def get_total_count(cls, session: AsyncSession) -> int:
-        """Возвращает количество банков в БД."""
-        query = select(func.count(cls.model.id))
-        result = await session.execute(query)
-        return result.scalar()
+    async def count(cls, session: AsyncSession, **filter_by):
+        """Подсчитать количество записей."""
+        try:
+            query = select(func.count(cls.model.id)).filter_by(**filter_by)
+            result = await session.execute(query)
+            count = result.scalar()
+            logger.info(f"Найдено {count} записей.")
+            return count
+        except SQLAlchemyError as e:
+            logger.error(f"Ошибка при подсчете записей: {e}")
+            raise

@@ -2,7 +2,7 @@ import pytest
 import asyncio
 from httpx import AsyncClient, ASGITransport
 from unittest.mock import MagicMock
-from app.auth.dependencies import get_current_user
+from app.users.dependencies import get_current_user
 from app.main import app
 
 

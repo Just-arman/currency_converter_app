@@ -57,15 +57,7 @@ class SUserAuth(SUserEmail):
 class SAuthResponse(BaseModel):
     ok: bool
     message: str
-
-
-class SUserID(BaseModel):
-    id: int
-
-
-class SUserDeleteId(BaseModel):
-    id: int = Field(gt=0)
-
+    
 
 class SRole(BaseModel):
     id: int = Field(description="Идентификатор роли")
@@ -75,7 +67,7 @@ class SRole(BaseModel):
 
 
 class SUserRoleUpdate(BaseModel):
-    name: str | None = Field(None, description="Название роли")
+    name: str = Field(description="Название роли")
 
     model_config = ConfigDict(from_attributes=True)
 

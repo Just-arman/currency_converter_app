@@ -28,7 +28,7 @@ def currency_rate_schema(currency_rate_data):
 class BaseTestAPI:
     """Базовый класс с общими вспомогательными методами для тестов валютных курсов."""
     async def _test_count_exceeds_total(self, async_client, override_user, url):
-        with patch("app.api.router.CurrencyRatesDAO.get_total_count", new_callable=AsyncMock) as mock_total:
+        with patch("app.api.router.CurrencyRatesDAO.count_records", new_callable=AsyncMock) as mock_total:
             mock_total.return_value = 60
             response = await async_client.get(url)
             assert response.status_code == 400
@@ -104,7 +104,7 @@ class TestGetBestBuyRates(BaseTestAPI):
         await self._test_count_exceeds_total(async_client, override_user, "/api/best_buy_rates/?usd=true&count=100")
 
     async def test_valid_request_for_buy(self, async_client, override_user, currency_rate_schema):
-        with patch("app.api.router.CurrencyRatesDAO.get_total_count", new_callable=AsyncMock) as mock_total, \
+        with patch("app.api.router.CurrencyRatesDAO.count_records", new_callable=AsyncMock) as mock_total, \
              patch("app.api.router.CurrencyRatesDAO.find_best_buy_rates", new_callable=AsyncMock) as mock_find:
             
             mock_total.return_value = 60
@@ -147,7 +147,7 @@ class TestGetBestSellRates(BaseTestAPI):
         await self._test_count_exceeds_total(async_client, override_user, "/api/best_sell_rates/?eur=true&count=100")
 
     async def test_valid_request_for_sell(self, async_client, override_user, currency_rate_schema):
-        with patch("app.api.router.CurrencyRatesDAO.get_total_count", new_callable=AsyncMock) as mock_total, \
+        with patch("app.api.router.CurrencyRatesDAO.count_records", new_callable=AsyncMock) as mock_total, \
              patch("app.api.router.CurrencyRatesDAO.find_best_sell_rates", new_callable=AsyncMock) as mock_find:
 
             mock_total.return_value = 60

@@ -1,6 +1,4 @@
-from typing import List
-
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Path, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.users.auth import authenticate_user, set_tokens
@@ -12,16 +10,13 @@ from app.users.dependencies import (
 )
 from app.users.models import Users
 from app.users.schemas import (
-    SUserEmail,
     SAuthResponse, 
     SUserRoleUpdate, 
     SRoleUpdateByID,                  
     SUserAddDB, 
     SUserAuth, 
     SUserRoleRead, 
-    SUserRegister, 
-    SUserDeleteId, 
-    SUserID
+    SUserRegister
 )
 from app.users.auth import get_password_hash
 from app.dao.session_maker import SessionDep, SessionDepCommit
@@ -39,9 +34,10 @@ router_users = APIRouter(prefix='/users', tags=['Users'])
 
 @router_auth.post("/register/")
 async def register_user(user_data: SUserRegister,
+                        user_auth: Users = Depends(get_current_admin_user),
                         session: AsyncSession = SessionDepCommit) -> dict:
     # Проверка на то, зарегистрирован ли такой пользователь уже
-    user = await UsersDAO.find_one_or_none(session=session, filters=SUserEmail(email=user_data.email))
+    user = await UsersDAO.find_one_or_none(session=session, email=user_data.email)
     if user:
         raise UserAlreadyExistsException
 
@@ -63,8 +59,7 @@ async def login_user(
     user_data: SUserAuth, 
     session: AsyncSession = SessionDep
 ) -> SAuthResponse:
-    user = await UsersDAO.find_one_or_none(session=session, filters=SUserEmail(email=user_data.email))
-    # user = await UsersDAO.find_one_or_none(session=session, email=user_data.email)
+    user = await UsersDAO.find_one_or_none(session=session, email=user_data.email)
     auth_user = await authenticate_user(user=user, password=user_data.password)
     if not auth_user:
         raise IncorrectEmailOrPasswordException
@@ -92,7 +87,7 @@ async def logout(response: Response):
 
 
 @router_users.get("/me/")
-async def get_me(user_data: Users = Depends(get_current_user)) -> SUserRoleRead: # TODO нужна ли здесь session?
+async def get_me(user_data: Users = Depends(get_current_user)) -> SUserRoleRead:
     return user_data
 
 
@@ -100,33 +95,31 @@ async def get_me(user_data: Users = Depends(get_current_user)) -> SUserRoleRead:
 async def get_all_users(
     user_data: Users = Depends(get_current_admin_user),
     session: AsyncSession = SessionDep
-) -> List[SUserRoleRead]:
-    return await UsersDAO.find_all(session)
+) -> list[SUserRoleRead]:
+    return await UsersDAO.find_all(session=session)
 
 
-@router_users.patch("/{user_id}/role", summary="Обновить роль пользователя. Вправе только админы.")
+@router_users.patch("/{user_id}/role", summary="Изменить роль пользователя. Вправе только админы.")
 async def update_user_role(
-    user_id: int,
-    role_data: SUserRoleUpdate,
+    user_id: int = Path(gt=0),
+    role_data: SUserRoleUpdate = ...,
     user_data: Users = Depends(get_current_admin_user),
+    # user_data: Users = Depends(get_current_user),
     session: AsyncSession = SessionDepCommit,
 ):
     """
-    Меняет роль пользователя по id или name. 
+    Меняет роль пользователя по названию роль. 
     """
-
     # 1. Получаем роль по name
-    if role_data.name is not None:
-        role = await RolesDAO.find_one_or_none(
-            session=session,
-            filters=SUserRoleUpdate(name=role_data.name)
-        )
-        if not role:
-            raise HTTPException(status_code=404, detail="Роль с таким названием не найдена")
+    # if role_data.name is not None: здесь эта проверка не выполняется,
+    # поскольку проверка и фильтрация пустых и приравненных к ним значений
+    # у нас обработано в валидатором в схеме SUserRoleUpdate
+    role = await RolesDAO.find_one_or_none(session=session, name=role_data.name)
+    if not role:
+        raise HTTPException(status_code=404, detail="Роль с таким названием не найдена")
 
     # 2. Получаем пользователя
-    user_filter = SUserID(id=user_id)
-    user = await UsersDAO.find_one_or_none(session, user_filter)
+    user = await UsersDAO.find_one_or_none(session=session, id=user_id)
     if not user:
         raise UserNotFoundByIDException
 
@@ -136,16 +129,13 @@ async def update_user_role(
 
     # 4. Обновляем роль
     values = SRoleUpdateByID(role_id=role.id)
-    await UsersDAO.update(session, user_filter, values)
+    await UsersDAO.update(session=session, values=values, id=user_id)
     return {"message": f"Роль пользователя обновлена на {role.name}"}
 
 
 @router_users.delete("/{user_id}", summary="Удалить пользователя по id")
-async def delete_user(user_id: int, session: AsyncSession = SessionDepCommit):  
-    deleted_count = await UsersDAO.delete(
-    session=session,
-    filters=SUserDeleteId(id=user_id)
-)
+async def delete_user(user_id: int = Path(gt=0), session: AsyncSession = SessionDepCommit):  
+    deleted_count = await UsersDAO.delete(session=session, id=user_id)
     if deleted_count == 0:
         raise UserNotFoundByIDException
     return {'message': 'Пользователь успешно удалён'}
