@@ -3,11 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dao import CurrencyRatesDAO
 from app.api.schemas import (
+    ConversionResultSchema,
     CurrencyRateSchema,
     AdminCurrencyRateSchema,
     OperationRatesSchema,
+    ConversionSchema,
 )
-from app.api.service import build_operation_rates
+from app.api.service import build_operation_rates, get_active_bank
 from app.users.dependencies import get_current_admin_user, get_current_user
 from app.users.models import Users
 from app.config import settings
@@ -82,3 +84,87 @@ async def get_best_rates(
 
     response = OperationRatesSchema(buy=buy_result, sell=sell_result)
     return response.model_dump(by_alias=True, exclude_none=True)
+
+
+@router_api.get("/convert/{bank_en}/rub-to-foreign", summary="Конвертация рублей в иностранную валюту")
+async def convert_rub_to_foreign(
+        bank_en: str = Path(description="Название банка на английском"),
+        amount: float = Query(gt=0, description="Сумма в рублях"),
+        usd: bool = False,
+        eur: bool = False,
+        user_data: Users = Depends(get_current_user),
+        session: AsyncSession = SessionDep
+) -> ConversionSchema:
+    if not usd and not eur:
+        raise HTTPException(status_code=400, detail="Укажите хотя бы одну валюту: usd или eur")
+
+    bank = await get_active_bank(bank_en, session)
+
+    usd_result = None
+    eur_result = None
+
+    if usd:
+        if bank.usd_sell == 0:
+            raise HTTPException(status_code=400, detail="Курс USD на данный момент недоступен для этого банка. Выберите другой банк")
+        usd_result = ConversionResultSchema(
+            rate=bank.usd_sell,
+            result=round(amount * bank.usd_sell, 2),
+        )
+
+    if eur:
+        if bank.eur_sell == 0:
+            raise HTTPException(status_code=400, detail="Курс EUR на данный момент недоступен для этого банка. Выберите другой банк")
+        eur_result = ConversionResultSchema(
+            rate=bank.eur_sell,
+            result=round(amount * bank.eur_sell, 2),
+        )
+
+    return ConversionSchema(
+        bank_en=bank.bank_en,
+        bank_name=bank.bank_name,
+        amount=amount,
+        usd=usd_result,
+        eur=eur_result,
+    )
+
+
+@router_api.get("/convert/{bank_en}/foreign-to-rub", summary="Конвертация иностранной валюты в рубли")
+async def convert_foreign_to_rub(
+        bank_en: str = Path(description="Название банка на английском"),
+        amount: float = Query(gt=0, description="Сумма в валюте"),
+        usd: bool = False,
+        eur: bool = False,
+        user_data: Users = Depends(get_current_user),
+        session: AsyncSession = SessionDep
+) -> ConversionSchema:
+    if not usd and not eur:
+        raise HTTPException(status_code=400, detail="Укажите хотя бы одну валюту: usd или eur")
+
+    bank = await get_active_bank(bank_en, session)
+
+    usd_result = None
+    eur_result = None
+
+    if usd:
+        if bank.usd_sell == 0:
+            raise HTTPException(status_code=400, detail="Курс USD на данный момент недоступен для этого банка. Выберите другой банк")
+        usd_result = ConversionResultSchema(
+            rate=bank.usd_sell,
+            result=round(amount * bank.usd_sell, 2),
+        )
+
+    if eur:
+        if bank.eur_sell == 0:
+            raise HTTPException(status_code=400, detail="Курс EUR на данный момент недоступен для этого банка. Выберите другой банк")
+        eur_result = ConversionResultSchema(
+            rate=bank.eur_sell,
+            result=round(amount * bank.eur_sell, 2),
+        )
+
+    return ConversionSchema(
+        bank_en=bank.bank_en,
+        bank_name=bank.bank_name,
+        amount=amount,
+        usd=usd_result,
+        eur=eur_result,
+    )

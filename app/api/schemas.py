@@ -15,6 +15,13 @@ class CurrencyRateSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AdminCurrencyRateSchema(CurrencyRateSchema):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+
 class CurrencyTypeSchema(BaseModel):
     bank_en: str
     bank_name: str
@@ -46,11 +53,18 @@ class OperationRatesSchema(BaseModel):
     sell: BestRatesResponse | None = None
 
 
-class AdminCurrencyRateSchema(CurrencyRateSchema):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-
-
 class Message(BaseModel):
     text: str
+
+
+class ConversionResultSchema(BaseModel):
+    rate: float       # курс, по которому считается конвертация
+    result: float     # итоговая сумма после конвертации
+
+
+class ConversionSchema(BaseModel):
+    bank_en: str
+    bank_name: str
+    amount: float
+    usd: ConversionResultSchema | None = None
+    eur: ConversionResultSchema | None = None
