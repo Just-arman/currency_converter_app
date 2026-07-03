@@ -165,7 +165,11 @@ class CurrencyRatesDAO(BaseDAO):
 
     @classmethod
     async def _apply_updates(
-        cls, session: AsyncSession, parsed_records: list[dict], to_update: set[str], datetime_now: datetime
+        cls, 
+        session: AsyncSession, 
+        parsed_records: list[dict], 
+        to_update: set[str], 
+        datetime_now: datetime
     ) -> int:
         """Обновляет существующие банки, отмечает время обнаружения и реактивирует."""
         # создаём пустое множество для отслеживания уже обновлённых банков
@@ -191,7 +195,11 @@ class CurrencyRatesDAO(BaseDAO):
 
     @classmethod
     async def _apply_inserts(
-        cls, session: AsyncSession, parsed_records: list[dict], to_add: set[str], datetime_now: datetime
+        cls, 
+        session: AsyncSession, 
+        parsed_records: list[dict], 
+        to_add: set[str], 
+        datetime_now: datetime
     ) -> int:
         """Добавляет новые банки."""
         new_records = [r for r in parsed_records if r["bank_en"] in to_add]
@@ -277,17 +285,4 @@ class CurrencyRatesDAO(BaseDAO):
             return result
         except SQLAlchemyError as e:
             logger.error(f"Ошибка при получении лучших курсов продажи валюты: {e}")
-            raise
-
-    @classmethod
-    async def count(cls, session: AsyncSession, **filter_by):
-        """Подсчитать количество записей."""
-        try:
-            query = select(func.count(cls.model.id)).filter_by(**filter_by)
-            result = await session.execute(query)
-            count = result.scalar()
-            logger.info(f"Найдено {count} записей.")
-            return count
-        except SQLAlchemyError as e:
-            logger.error(f"Ошибка при подсчете записей: {e}")
             raise

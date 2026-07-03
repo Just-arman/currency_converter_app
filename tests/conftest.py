@@ -1,13 +1,11 @@
 import pytest
 import asyncio
 from httpx import AsyncClient, ASGITransport
-from unittest.mock import MagicMock
-from app.users.dependencies import get_current_user
+from app.users.dependencies import get_current_user, get_current_admin_user
 from app.main import app
 
 
-# общие фикстуры для всех тестов
-
+# общий event loop
 @pytest.fixture(scope="session")
 def event_loop():
     """Создаём event loop для асинхронных тестов."""
@@ -16,35 +14,32 @@ def event_loop():
     loop.close()
 
 
-@pytest.fixture
-def mock_user():
-    """Мок-данные пользователя."""
-    user = MagicMock()
-    user.id = 1
-    user.email = "test@test.com"
-    user.role = MagicMock()
-    user.role.id = 1
-    user.role.name = "user"
-    user.role_id = 1
-    user.phone_number = "+79001234567"
-    user.first_name = "Иван"
-    user.last_name = "Иванов"
-    return user
-
-
+# HTTP-клиент
 @pytest.fixture
 async def async_client():
-    """Общие данные асинхронного клиента для тестов."""
+    """AsyncClient обеспечивает реальные HTTP-запросы к приложению
+    без запуска сервера и без сетевых соединений."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
 
+# переопределение dependencies
 @pytest.fixture
 def override_user(mock_user):
-    """Получаем пользователя и затем используем во всех тестах."""
+    """Подменяет get_current_user моком обычного пользователя.
+    Используется в тестах эндпоинтов, доступных авторизованному пользователю."""
     app.dependency_overrides[get_current_user] = lambda: mock_user
     # без lambda
     # def get_mock_user():
     #     return mock_user
+    yield
+    app.dependency_overrides.clear()
+
+@pytest.fixture
+def override_admin(mock_admin):
+    """Подменяет get_current_admin_user моком администратора.
+    Используй в тестах эндпоинтов, защищённых правами администратора
+    (update_user_role, get_all_users, all_currency_admin и т.п.)."""
+    app.dependency_overrides[get_current_admin_user] = lambda: mock_admin
     yield
     app.dependency_overrides.clear()

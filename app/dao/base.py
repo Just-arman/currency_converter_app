@@ -45,7 +45,6 @@ class BaseDAO(Generic[T]):
             query = select(cls.model).filter_by(**filter_by)
             result = await session.execute(query)
             records = result.scalars().all()
-            logger.info(f"Найдено {len(records)} записей.")
             return records
         except SQLAlchemyError as e:
             logger.error(f"Ошибка при поиске всех записей по фильтрам {filter_by}: {e}")
@@ -121,7 +120,6 @@ class BaseDAO(Generic[T]):
             query = select(func.count(cls.model.id)).filter_by(**filter_by)
             result = await session.execute(query)
             count = result.scalar()
-            logger.info(f"Найдено {count} записей.")
             return count
         except SQLAlchemyError as e:
             logger.error(f"Ошибка при подсчете записей: {e}")

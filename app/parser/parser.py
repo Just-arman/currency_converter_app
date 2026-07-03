@@ -96,8 +96,8 @@ def parse_currency_table(html: str) -> list[BaseModel]:
                 continue 
 
             currencies.append(CurrencyRateSchema(**{
-                'bank_name': bank_name, # /sberbank (link_info[2])
-                'bank_en': link_info[1], # /bank
+                'bank_name': bank_name, # /СберБанк (link_info[2])
+                'bank_en': link_info[1], # /sberbank
                 'link': link_info[0], # ''
                 'usd_buy': usd_sell,    # зеркально: клиент покупает = банк продаёт
                 'usd_sell': usd_buy,    # зеркально: клиент продаёт = банк покупает
