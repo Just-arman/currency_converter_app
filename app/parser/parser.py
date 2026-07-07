@@ -7,7 +7,7 @@ from loguru import logger
 from pydantic import BaseModel
 from urllib.parse import urlparse, parse_qs, unquote
 
-from app.api.schemas import CurrencyRateSchema
+from app.currency.schemas import CurrencyRateSchema
 from app.logger import log
 
 
@@ -105,6 +105,10 @@ def parse_currency_table(html: str) -> list[BaseModel]:
                 'eur_sell': eur_buy,   
                 'update_time': update_time,
             }))
+            # Переменные usd_buy и usd_sell извлекаются из HTML в том виде, как их публикует 
+            # сайт (с позиции банка). Но при создании схемы CurrencyRateSchema 
+            # значения меняются местами — клиентская перспектива формируется здесь, до записи в БД.
+
             logger.info(f"{bank_name=}")
         return currencies
     except Exception as e:

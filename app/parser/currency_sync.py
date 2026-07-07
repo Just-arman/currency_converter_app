@@ -1,6 +1,4 @@
-import redis.asyncio as redis
-
-from app.api.dao import CurrencyRatesDAO
+from app.currency.dao import CurrencyRatesDAO
 from app.dao.session_maker import session_manager
 from app.parser.parser import fetch_all_currencies
 from app.logger import log
@@ -10,5 +8,5 @@ from app.logger import log
 @session_manager.connection(commit=True)
 async def launch_sync_currencies(session):
     records = await fetch_all_currencies()
-    await CurrencyRatesDAO.bulk_update_currency(session=session, records=records)
+    await CurrencyRatesDAO.bulk_update_data_currency(session=session, records=records)
 

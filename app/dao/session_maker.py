@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from functools import wraps
-from typing import AsyncGenerator, Callable, Optional
+from typing import AsyncGenerator, Optional
 
 from fastapi import Depends, HTTPException
 from loguru import logger
@@ -49,6 +49,22 @@ class DatabaseSessionManager:
             await session.rollback()
             logger.exception(f"Ошибка транзакции: {e}")
             raise
+    
+    @asynccontextmanager
+    async def commit(self, session: AsyncSession) -> AsyncGenerator[None, None]:
+        """
+        Управление транзакцией: коммит при успехе, откат при ошибке.
+        """
+        try:
+            yield
+            await session.commit()
+        except HTTPException:
+            await session.rollback()
+            raise
+        except Exception as e:
+            await session.rollback()
+            logger.exception(f"Ошибка транзакции: {e}")
+            raise
 
     async def get_session_without_transaction(self) -> AsyncGenerator[AsyncSession, None]:
         """
@@ -83,41 +99,12 @@ class DatabaseSessionManager:
             return wrapper
         return decorator
 
-    @property
-    def session_dependency_without_commit(self) -> Callable:
-        """
-            Возвращает зависимость для FastAPI с доступом к сессии без транзакции.
-            Используется когда не нужен commit транзакции.
-        """
-        return Depends(self.get_session_without_transaction)
-
-    @property
-    def session_dependency_with_commit(self) -> Callable:
-        """
-            Возвращает зависимость для FastAPI с доступом к сессии с транзакций.
-            Используется когда нужен commit транзакции.
-        """
-        return Depends(self.get_session_with_transaction)
-
 
 # Инициализация менеджера сессий базы данных
 session_manager = DatabaseSessionManager(async_session_maker)
 
 # Зависимости FastAPI для использования сессий
 # без коммита
-SessionDep = session_manager.session_dependency_without_commit
+SessionDep = Depends(session_manager.get_session_without_transaction)
 # с коммитом
-SessionDepCommit = session_manager.session_dependency_with_commit
-
-# Пример использования декоратора
-# @session_manager.connection(isolation_level="SERIALIZABLE", commit=True)
-# async def example_method(*args, session: AsyncSession, **kwargs):
-#     # Логика метода
-#     pass
-
-
-# Пример использования зависимости
-# @router.post("/register/")
-# async def register_user(user_data: SUserRegister, session: AsyncSession = SessionDepCommit):
-#     # Логика эндпоинта
-#     pass
+SessionDepCommit = Depends(session_manager.get_session_with_transaction)

@@ -3,12 +3,12 @@ from datetime import datetime, timedelta, timezone
 
 from loguru import logger
 from pydantic import BaseModel
-from sqlalchemy import delete, desc, func, insert, select
+from sqlalchemy import delete, desc, insert, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.expression import update
 
-from app.api.models import CurrencyRates
+from app.currency.models import CurrencyRates
 from app.dao.base import BaseDAO
 from app.logger import log
 
@@ -19,7 +19,7 @@ class CurrencyRatesDAO(BaseDAO):
     MISSING_DURATION_THRESHOLD = timedelta(days=3)
     
     @classmethod
-    async def bulk_update_currency(cls, records: list[BaseModel], session: AsyncSession) -> int:
+    async def bulk_update_data_currency(cls, records: list[BaseModel], session: AsyncSession) -> int:
         """Синхронизация валютных курсов (insert + update + delete) в бд"""
         try:
             # 1. Подготовка данных
@@ -83,13 +83,6 @@ class CurrencyRatesDAO(BaseDAO):
             # 6. COMMIT (фиксируем результат синхронизации)
             await session.commit()
 
-            # Подсчет количества банков в бд через функцию с прямым подсчетом банков в бд
-            total = await cls.count_records(session)
-            if total == counted_banks:
-                log.info("Результаты подсчетов банков одинаковы. ")
-            else:
-                log.warning("Результаты подсчетов банков отличаются. Требуется проверка. ")
-
             log.info(
                 f"Синхронизация завершена. "
                 f"Итоговое количество банков = {counted_banks}. "
@@ -137,11 +130,11 @@ class CurrencyRatesDAO(BaseDAO):
                 continue
 
             if bank_en in parsed_bank_ens:
-                log.warning(f"Пропуск дублирующейся записи для {bank_en} в рамках одного прогона")
+                log.warning(f"Пропуск дублирующейся записи для банка {bank_en} в рамках одного прогона")
                 continue
 
             if bank_name in parsed_bank_names:
-                log.warning(f"Пропуск дублирующейся записи для {bank_name} в рамках одного прогона")
+                log.warning(f"Пропуск дублирующейся записи для банка {bank_name} в рамках одного прогона")
                 continue
 
             parsed_records.append(record)

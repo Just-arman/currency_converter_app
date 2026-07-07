@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from app.api.router import router_api
+from app.currency.router import router_currency
 from app.users.router import router_auth, router_users
 from app.parser.currency_sync import launch_sync_currencies
 
@@ -49,7 +49,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(router_root)
     app.include_router(router_auth)
     app.include_router(router_users)
-    app.include_router(router_api)
+    app.include_router(router_currency)
 
 
 def create_app() -> FastAPI:

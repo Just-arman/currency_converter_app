@@ -115,7 +115,7 @@ class BaseDAO(Generic[T]):
 
     @classmethod
     async def count_records(cls, session: AsyncSession, **filter_by):
-        """Подсчитать количество записей."""
+        """Подсчитать количество записей в бд."""
         try:
             query = select(func.count(cls.model.id)).filter_by(**filter_by)
             result = await session.execute(query)

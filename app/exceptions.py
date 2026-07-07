@@ -55,14 +55,14 @@ ForbiddenException = HTTPException(
     detail='Недостаточно прав. Только админы имеют право на такое действие.'
 )
 
-# Банк не найден
-BankNotFoundException = HTTPException(
+# Курс вылют банка не найден
+BankRateNotFoundException = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND,
-    detail="Банк не найден."
+    detail="Курс банка не найден."
 )
 
-# Банк не активен
-BankIsInactiveException = HTTPException(
+# Курс валют банка не активен
+BankRateIsInactiveException = HTTPException(
     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-    detail="Пока что не можем предоставить валюту данного банка, выберите другой"
+    detail="Пока что не можем предоставить курсы валют данного банка, выберите другой банк"
 )

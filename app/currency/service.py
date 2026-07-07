@@ -1,13 +1,11 @@
 from typing import Awaitable, Callable
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
 
-from app.api.dao import CurrencyRatesDAO
-from app.api.models import CurrencyRates
-from app.api.schemas import BestRatesResponse, USDSchema, EURSchema
-from app.config import settings
-from app.exceptions import BankIsInactiveException, BankNotFoundException
+from app.currency.dao import CurrencyRatesDAO
+from app.currency.models import CurrencyRates
+from app.currency.schemas import BestRatesResponse, USDSchema, EURSchema
+from app.exceptions import BankRateNotFoundException, BankRateIsInactiveException
 
 
 DaoRatesMethod = Callable[..., Awaitable[dict]]
@@ -33,10 +31,11 @@ async def build_operation_rates(
     return BestRatesResponse(usd=usd_result, eur=eur_result)
 
 
-async def get_active_bank(bank_en: str, session: AsyncSession) -> CurrencyRates:
+async def get_bank(bank_en: str, session: AsyncSession) -> CurrencyRates:
+    """Получает конкретный банк с курсами валют."""
     bank = await CurrencyRatesDAO.find_one_or_none(session=session, bank_en=bank_en.lower())
     if not bank:
-        raise BankNotFoundException
+        raise BankRateNotFoundException
     if not bank.is_active:
-        raise BankIsInactiveException
+        raise BankRateIsInactiveException
     return bank

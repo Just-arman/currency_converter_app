@@ -34,7 +34,6 @@ router_users = APIRouter(prefix='/users', tags=['Users'])
 
 @router_auth.post("/register/")
 async def register_user(user_data: SUserRegister,
-                        user_auth: Users = Depends(get_current_admin_user),
                         session: AsyncSession = SessionDepCommit) -> dict:
     # Проверка на то, зарегистрирован ли такой пользователь уже
     user = await UsersDAO.find_one_or_none(session=session, email=user_data.email)
@@ -50,7 +49,7 @@ async def register_user(user_data: SUserRegister,
     
     # Добавление пользователя
     await UsersDAO.add(session=session, values=SUserAddDB(**user_data_dict))
-    return {'message': 'Ваша регистрация прошла успешно!'}
+    return {'message': 'Вы успешно зарегистрированы!'}
 
 
 @router_auth.post("/login/")
@@ -80,7 +79,7 @@ async def process_refresh_token(
 
 
 @router_auth.post("/logout")
-async def logout(response: Response):
+async def logout(response: Response, user_data: Users = Depends(get_current_user)):
     response.delete_cookie("user_access_token")
     response.delete_cookie("user_refresh_token")
     return {'message': 'Пользователь успешно вышел из системы'}
@@ -113,7 +112,7 @@ async def update_user_role(
     # 1. Получаем роль по name
     # if role_data.name is not None: здесь эта проверка не выполняется,
     # поскольку проверка и фильтрация пустых и приравненных к ним значений
-    # у нас обработано в валидатором в схеме SUserRoleUpdate
+    # у нас обработано валидатором в схеме SUserRoleUpdate
     role = await RolesDAO.find_one_or_none(session=session, name=role_data.name)
     if not role:
         raise HTTPException(status_code=404, detail="Роль с таким названием не найдена")
@@ -134,7 +133,11 @@ async def update_user_role(
 
 
 @router_users.delete("/{user_id}", summary="Удалить пользователя по id")
-async def delete_user(user_id: int = Path(gt=0), session: AsyncSession = SessionDepCommit):  
+async def delete_user(
+    user_id: int = Path(gt=0), 
+    user_data: Users = Depends(get_current_admin_user), 
+    session: AsyncSession = SessionDepCommit
+):
     deleted_count = await UsersDAO.delete(session=session, id=user_id)
     if deleted_count == 0:
         raise UserNotFoundByIDException
