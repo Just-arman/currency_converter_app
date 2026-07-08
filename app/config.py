@@ -11,11 +11,6 @@ class Settings(BaseSettings):
     DB_PASSWORD: str
     SECRET_KEY: str
     ALGORITHM: str
-    VALID_CURRENCIES: list = ["usd", "eur"]
-    CURRENCY_FIELDS: dict = {
-        'usd': {'buy': 'usd_buy', 'sell': 'usd_sell'},
-        'eur': {'buy': 'eur_buy', 'sell': 'eur_sell'}
-    }
     BASE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     # SQLITE_PATH: str = "data/db.sqlite3" # раскомментировать при использовании sqlite3 для бд
     SQLITE_PATH: str | None = None 

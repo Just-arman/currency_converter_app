@@ -9,4 +9,3 @@ from app.logger import log
 async def launch_sync_currencies(session):
     records = await fetch_all_currencies()
     await CurrencyRatesDAO.bulk_update_data_currency(session=session, records=records)
-

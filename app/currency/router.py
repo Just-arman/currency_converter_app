@@ -10,6 +10,7 @@ from app.currency.schemas import (
     ConversionSchema,
 )
 from app.currency.service import build_operation_rates, get_bank
+from app.parser.currency_sync import launch_sync_currencies
 from app.users.dependencies import get_current_admin_user, get_current_user
 from app.users.models import Users
 from app.config import settings
@@ -18,6 +19,13 @@ from app.logger import log
 
 
 router_currency = APIRouter(prefix='/currency', tags=['Currency'])
+
+
+@router_currency.post("/parser/")
+async def run_manual_parser(user_data = Depends(get_current_admin_user)):
+    """Запускает парсер вручную с обновлением данных в БД - вправе только админы"""
+    await launch_sync_currencies()
+    return {"message": "Парсер запущен"}
 
 
 @router_currency.get("/all_currency_rates/", summary="Получить информацию о валютных курсах всех банков")
