@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from app.api.dao import CurrencyRatesDAO
+from app.currency.dao import CurrencyRatesDAO
 
 """
 Юнит-тесты для чистых методов CurrencyRatesDAO (которые не используют сессию).
@@ -10,7 +10,7 @@ _log_duplicate_banks и _prepare_parsed_records не принимают session 
 
 Остальные методы CurrencyRatesDAO (требующие session: _fetch_db_banks,
 _apply_updates, _apply_inserts, _apply_deactivation, _apply_deletion,
-bulk_update_currency, find_best_buy_rates, find_best_sell_rates) сюда
+bulk_update_data_currency, find_best_buy_rates, find_best_sell_rates) сюда
 намеренно не входят — для них нужны интеграционные тесты с реальной
 (тестовой) БД.
 """
@@ -21,13 +21,13 @@ class TestLogDuplicateBanks:
     def test_duplicate_bank_name_triggers_warning(self):
         """Дубль по bank_name при РАЗНОМ bank_en — случай 'КАМКОМБАНК'
         (обычная ссылка и рекламный трекер дают разный bank_en) —
-        тоже логирует предупреждение с упоминанием названия банка."""
+        логирует предупреждение с упоминанием названия банка."""
         
         records = [
             {"bank_en": "kamkombank", "bank_name": "КАМКОМБАНК"},
             {"bank_en": "mrxe-tracker", "bank_name": "КАМКОМБАНК"},
         ]
-        with patch("app.api.dao.log") as mock_log:
+        with patch("app.currency.dao.log") as mock_log:
             CurrencyRatesDAO._log_duplicate_banks(records)
             mock_log.warning.assert_called_once()
             message = mock_log.warning.call_args[0][0]
@@ -35,14 +35,14 @@ class TestLogDuplicateBanks:
 
     def test_empty_list_does_not_warn(self):
         """Пустой список записей не вызывает ни ошибок, ни предупреждений."""
-        with patch("app.api.dao.log") as mock_log:
+        with patch("app.currency.dao.log") as mock_log:
             CurrencyRatesDAO._log_duplicate_banks([])
             mock_log.warning.assert_not_called()
 
 
 class TestPrepareParsedRecords:
     """Тесты для _prepare_parsed_records — фильтрация неполных и
-    дублирующихся записей перед дальнейшей обработкой в bulk_update_currency."""
+    дублирующихся записей перед дальнейшей обработкой в bulk_update_data_currency."""
 
     def test_valid_records_pass_through_unchanged(self):
         """Базовый случай: корректные записи без
@@ -77,7 +77,7 @@ class TestPrepareParsedRecords:
 
     def test_duplicate_bank_en_keeps_first_occurrence(self):
         """При повторе bank_en в результат попадает 
-        именно ПЕРВАЯ встреченная запись, а не последняя."""
+        именно ПЕРВАЯ встречная запись, а не последняя."""
 
         records = [
             {"bank_en": "kamkombank", "bank_name": "КАМКОМБАНК", "usd_buy": 77.99},

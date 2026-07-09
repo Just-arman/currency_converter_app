@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from app.users.dependencies import check_refresh_token
 from app.main import app
 
@@ -58,7 +57,7 @@ class TestRefreshToken:
 class TestLogoutUser:
     """Тест для выхода пользователя из аккаунта."""
 
-    async def test_successful_logout(self, async_client):
+    async def test_successful_logout(self, async_client, override_user):
         response = await async_client.post("/auth/logout")
         assert response.status_code == 200
         assert response.json()["message"] == "Пользователь успешно вышел из системы"
@@ -75,7 +74,7 @@ class TestGetMe:
 class TestGetAllUsers:
     """Тест для получения всех пользователей."""
 
-    async def test_returns_list_of_users(self, async_client, override_user, mock_user):
+    async def test_returns_list_of_users(self, async_client, override_admin, mock_user):
         with patch("app.users.router.UsersDAO.find_all", new_callable=AsyncMock) as mock_find:
             mock_find.return_value = [mock_user]
             response = await async_client.get("/users/all_users/")
@@ -87,35 +86,31 @@ class TestGetAllUsers:
 class TestUpdateUserRole:
     """Тесты для обновления роли пользователя."""
 
-    async def test_successful_role_update(self, async_client, mock_user, mock_role):
+    async def test_successful_role_update(self, async_client, override_admin, mock_user, mock_user_role):
         with patch("app.users.router.RolesDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role, \
              patch("app.users.router.UsersDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_user, \
              patch("app.users.router.UsersDAO.update", new_callable=AsyncMock):
-            mock_find_role.return_value = mock_role
+            mock_find_role.return_value = mock_user_role
             mock_find_user.return_value = mock_user
-            mock_user.role_id = 2
-            response = await async_client.patch("/users/1/role", json={"name": "user"})
+            mock_user.role_id = 1
+            response = await async_client.patch("/users/1/role", json={"name": "User"})
             assert response.status_code == 200
 
-    async def test_both_fields_empty(self, async_client):
-        response = await async_client.patch("/users/1/role", json={"id": None, "name": "string"})
-        assert response.status_code == 400
-
-    async def test_user_not_found(self, async_client, mock_role):
+    async def test_user_not_found(self, async_client, override_admin, mock_user_role):
         with patch("app.users.router.RolesDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role, \
              patch("app.users.router.UsersDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_user:
-            mock_find_role.return_value = mock_role
+            mock_find_role.return_value = mock_user_role
             mock_find_user.return_value = None
-            response = await async_client.patch("/users/1/role", json={"id": 1})
+            response = await async_client.patch("/users/1/role", json={"name": "User"})
             assert response.status_code == 404
 
-    async def test_same_role(self, async_client, mock_user, mock_role):
+    async def test_same_role(self, async_client, mock_user, override_admin, mock_user_role):
         with patch("app.users.router.RolesDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_role, \
              patch("app.users.router.UsersDAO.find_one_or_none", new_callable=AsyncMock) as mock_find_user:
-            mock_find_role.return_value = mock_role
+            mock_find_role.return_value = mock_user_role
             mock_find_user.return_value = mock_user
-            mock_user.role_id = mock_role.id
-            response = await async_client.patch("/users/1/role", json={"id": 1})
+            mock_user.role_id = mock_user_role.id
+            response = await async_client.patch("/users/1/role", json={"name": "User"})
             assert response.status_code == 200
             assert "уже имеет" in response.json()["message"]
 
@@ -123,13 +118,13 @@ class TestUpdateUserRole:
 class TestDeleteUser:
     """Тесты для удаления пользователя."""
 
-    async def test_successful_deletion(self, async_client):
+    async def test_successful_deletion(self, async_client, override_admin):
         with patch("app.users.router.UsersDAO.delete", new_callable=AsyncMock) as mock_delete:
             mock_delete.return_value = 1
             response = await async_client.delete("/users/1")
             assert response.status_code == 200
 
-    async def test_user_not_found(self, async_client):
+    async def test_user_not_found(self, async_client, override_admin):
         with patch("app.users.router.UsersDAO.delete", new_callable=AsyncMock) as mock_delete:
             mock_delete.return_value = 0
             response = await async_client.delete("/users/999")

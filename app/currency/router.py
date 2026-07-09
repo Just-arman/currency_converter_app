@@ -22,7 +22,7 @@ router_currency = APIRouter(prefix='/currency', tags=['Currency'])
 
 
 @router_currency.post("/parser/")
-async def run_manual_parser(user_data = Depends(get_current_admin_user)):
+async def run_parser_manually(user_data = Depends(get_current_admin_user)):
     """Запускает парсер вручную с обновлением данных в БД - вправе только админы"""
     await launch_sync_currencies()
     return {"message": "Парсер запущен"}

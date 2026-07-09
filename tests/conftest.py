@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 import asyncio
 from httpx import AsyncClient, ASGITransport
@@ -21,6 +23,40 @@ async def async_client():
     без запуска сервера и без сетевых соединений."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
+
+
+# фикстура тестовых данных обычных пользователей
+@pytest.fixture
+def mock_user():
+    """Мок обычного пользователя с ролью 'user'."""
+    user = MagicMock()
+    user.id = 1
+    user.email = "test@test.com"
+    user.role = MagicMock()
+    user.role.id = 1
+    user.role.name = "user"
+    user.role_id = 1
+    user.phone_number = "+79001234567"
+    user.first_name = "Иван"
+    user.last_name = "Иванов"
+    return user
+
+# фикстура тестовых данных админов
+@pytest.fixture
+def mock_admin():
+    """Мок пользователя с ролью 'admin'. Нужен для эндпоинтов,
+    защищённых get_current_admin_user."""
+    admin = MagicMock()
+    admin.id = 2
+    admin.email = "admin@test.com"
+    admin.role = MagicMock()
+    admin.role.id = 2
+    admin.role.name = "admin"
+    admin.role_id = 2
+    admin.phone_number = "+79005464954"
+    admin.first_name = "Админ"
+    admin.last_name = "Админов"
+    return admin
 
 
 # переопределение dependencies
