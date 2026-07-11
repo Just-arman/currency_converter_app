@@ -4,7 +4,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from app.currency.router import router_currency
@@ -68,7 +67,6 @@ def create_app() -> FastAPI:
     )
 
     # Монтирование статических файлов
-    app.mount('/static', StaticFiles(directory='app/static'), name='static')
     register_routers(app)
 
     return app

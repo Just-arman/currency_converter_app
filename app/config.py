@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.logger import log
 
@@ -11,6 +12,8 @@ class Settings(BaseSettings):
     DB_PASSWORD: str
     SECRET_KEY: str
     ALGORITHM: str
+    MODE: Literal["DEV", "TEST", "PROD"] = "DEV"
+    LOG_LEVEL: str = "INFO"
     BASE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     # SQLITE_PATH: str = "data/db.sqlite3" # раскомментировать при использовании sqlite3 для бд
     SQLITE_PATH: str | None = None 

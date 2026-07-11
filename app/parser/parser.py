@@ -109,7 +109,7 @@ def parse_currency_table(html: str) -> list[BaseModel]:
             # сайт (с позиции банка). Но при создании схемы CurrencyRateSchema 
             # значения меняются местами — клиентская перспектива формируется здесь, до записи в БД.
 
-            logger.info(f"{bank_name=}")
+            # logger.info(f"{bank_name=}")
         return currencies
     except Exception as e:
         logger.error(f"Ошибка при парсинге HTML: {e}")
