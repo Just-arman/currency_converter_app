@@ -27,10 +27,6 @@ class Roles(Base):
     name: Mapped[str_uniq]
 
     users: Mapped[list["Users"]] = relationship(back_populates="role")
-
-    def __repr__(self):
-        log.info(f"это __repr__")
-        return f"{self.name}"
     
     # def __repr__(self):
     #     return f"Roles(name={self.name!r})"

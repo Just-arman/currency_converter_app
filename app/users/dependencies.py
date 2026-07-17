@@ -62,7 +62,6 @@ async def get_current_user(token: str = Depends(get_access_token), session: Asyn
 
     # получаем expire - время действия токена в секундах
     expire = payload.get("exp")
-    # log.info(f"{expire=}")
 
     # получаем expire_time - время завершения действия токена 
     expire_time = datetime.fromtimestamp(int(expire), tz=timezone.utc)
@@ -86,6 +85,5 @@ async def get_current_user(token: str = Depends(get_access_token), session: Asyn
 
 async def get_current_admin_user(current_user: Users = Depends(get_current_user)):
     if current_user.role.id in [3, 4]:
-        log.debug(f"{current_user=}")
         return current_user
     raise ForbiddenException

@@ -4,6 +4,7 @@ from fastapi.responses import Response
 from jose import jwt
 
 from app.config import settings
+from app.logger import log
 
 
 # улучшенный прежний формат создания токена
@@ -13,7 +14,7 @@ def create_tokens(data: dict) -> dict:
     def _encode(token_type: str, expire: datetime) -> str:  
         # новый формат
         payload = {**data, "exp": int(expire.timestamp()), "type": token_type}
-
+        
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         return token
 
