@@ -4,6 +4,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from loguru import logger
 
 from app.currency.router import router_currency
@@ -65,9 +66,12 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"]
     )
+    
+    @app.get("/", include_in_schema=False)
+    async def index():
+        return FileResponse("app/static/index.html")
 
     register_routers(app)
-
     return app
 
 

@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Валюта · Табло курсов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0e1826;
+    --panel: #16233a;
+    --panel-2: #1b2c47;
+    --border: #24384f;
+    --amber: #f0a93b;
+    --amber-dim: #c9860f;
+    --amber-hover: #ffb84f;
+    --mint: #6fcf97;
+    --coral: #e8735c;
+    --text: #f4efe3;
+    --muted: #93a3b8;
+    --glow-1: rgba(240,169,59,0.08);
+    --glow-2: rgba(111,207,151,0.05);
+  }
+
+  /* ---------- Theme variants ---------- */
+  [data-theme="light"] {
+    --ink: #f7f5f0;
+    --panel: #ffffff;
+    --panel-2: #f0ece2;
+    --border: #ddd6c7;
+    --amber: #f2b355;
+    --amber-dim: #d99a3c;
+    --amber-hover: #ffc978;
+    --mint: #2f9e63;
+    --coral: #c0442f;
+    --text: #1c1710;
+    --muted: #6b6355;
+    --glow-1: rgba(242,179,85,0.07);
+    --glow-2: rgba(47,158,99,0.05);
+  }
+  [data-theme="grey"] {
+    --ink: #26282b;
+    --panel: #303237;
+    --panel-2: #383a40;
+    --border: #45474d;
+    --amber: #c7cbd1;
+    --amber-dim: #9a9ea6;
+    --amber-hover: #dde0e4;
+    --mint: #6fcf97;
+    --coral: #e8735c;
+    --text: #eceef0;
+    --muted: #8b8f96;
+    --glow-1: rgba(199,203,209,0.06);
+    --glow-2: rgba(111,207,151,0.04);
+  }
+  [data-theme="amber-green"] {
+    --ink: #0a1f14;
+    --panel: #102b1c;
+    --panel-2: #143322;
+    --border: #1f4a30;
+    --amber: #14e8a0;
+    --amber-dim: #0fbd82;
+    --amber-hover: #4ff5bc;
+    --mint: #6fcf97;
+    --coral: #e8735c;
+    --text: #eef4e2;
+    --muted: #8fae9a;
+    --glow-1: rgba(20,232,160,0.16);
+    --glow-2: rgba(111,207,151,0.06);
+  }
+  [data-theme="blue-cyan"] {
+    --ink: #071b30;
+    --panel: #0e2c4d;
+    --panel-2: #123a63;
+    --border: #1c4f7d;
+    --amber: #38a3ff;
+    --amber-dim: #1c7fd6;
+    --amber-hover: #6ec2ff;
+    --mint: #6fcf97;
+    --coral: #e8735c;
+    --text: #eaf6fb;
+    --muted: #8bb8d9;
+    --glow-1: rgba(56,163,255,0.17);
+    --glow-2: rgba(111,207,151,0.05);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ink);
+    background-image:
+      radial-gradient(ellipse 800px 400px at 15% -10%, var(--glow-1), transparent),
+      radial-gradient(ellipse 600px 300px at 90% 10%, var(--glow-2), transparent);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .mono { font-family: 'Courier Prime', monospace; }
+  .serif { font-family: 'Fraunces', serif; }
+
+  a { color: inherit; }
+
+  /* ---------- Layout shell ---------- */
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px 80px; }
+
+  header.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 36px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .brand .mark {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+  }
+  .brand .mark span { color: var(--amber); }
+  .brand .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .auth-status {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .auth-status strong { color: var(--text); font-weight: 500; }
+
+  button, input, select {
+    font-family: inherit;
+    font-size: 14px;
+  }
+
+  .btn {
+    background: var(--amber);
+    color: #1a1206;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+  .btn:hover { background: var(--amber-hover); }
+  .btn:active { transform: translateY(1px); }
+  .btn:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn.ghost:hover { border-color: var(--amber); color: var(--amber); background: transparent; }
+  .btn.small { padding: 6px 12px; font-size: 12.5px; }
+
+  /* ---------- Hero (live rate) ---------- */
+  .hero {
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px 34px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(400px 200px at 85% 0%, rgba(240,169,59,0.10), transparent);
+    pointer-events: none;
+  }
+  .live-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--mint);
+    margin-right: 7px;
+    box-shadow: 0 0 0 0 rgba(111,207,151,0.6);
+    animation: pulse 2.2s infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(111,207,151,0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(111,207,151,0); }
+    100% { box-shadow: 0 0 0 0 rgba(111,207,151,0); }
+  }
+  .hero .label {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .hero .best-rate {
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .hero .figure {
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    font-size: 56px;
+    color: var(--amber);
+    text-shadow: 0 0 22px rgba(240,169,59,0.35);
+    line-height: 1;
+  }
+  .hero .figure sup { font-size: 22px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+  .hero .meta { color: var(--muted); font-size: 14px; padding-bottom: 6px; }
+  .hero .meta b { color: var(--text); }
+
+  /* ---------- Cards / sections ---------- */
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .section-sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 26px;
+    margin-bottom: 28px;
+  }
+
+  /* ---------- Converter ---------- */
+  .converter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 14px;
+    align-items: end;
+  }
+  @media (max-width: 720px) { .converter-grid { grid-template-columns: 1fr 1fr; } }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: var(--ink);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 7px;
+  }
+  .field input:focus, .field select:focus { border-color: var(--amber); outline: none; }
+
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .toggle-row button {
+    background: var(--ink);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 7px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .toggle-row button.active { border-color: var(--amber); color: var(--amber); }
+
+  .convert-result {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--border);
+    display: none;
+  }
+  .convert-result.show { display: block; }
+  .convert-result .amount {
+    font-family: 'Courier Prime', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--mint);
+  }
+  .convert-result .amount-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .convert-result .rate-note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .convert-result .fee-note {
+    color: var(--muted);
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+  }
+
+  /* ---------- Rates board (table) ---------- */
+  table.board { width: 100%; border-collapse: collapse; }
+  table.board th {
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  table.board th:hover { color: var(--amber); }
+  table.board td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(36,56,79,0.5);
+    font-size: 14px;
+  }
+  table.board tr:hover td { background: rgba(240,169,59,0.04); }
+  table.board .num { font-family: 'Courier Prime', monospace; text-align: right; }
+  table.board .buy { color: var(--mint); }
+  table.board .sell { color: var(--amber); }
+  table.board .bank-name { font-weight: 500; }
+  table.board .bank-en { color: var(--muted); font-size: 12px; }
+  .table-scroll { overflow-x: auto; }
+
+  /* ---------- Auth forms ---------- */
+  .auth-shell {
+    max-width: 420px;
+    margin: 60px auto;
+  }
+  .auth-tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+  .auth-tabs button {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .auth-tabs button:first-child { border-radius: 8px 0 0 8px; }
+  .auth-tabs button:last-child { border-radius: 0 8px 8px 0; }
+  .auth-tabs button.active { color: var(--amber); border-color: var(--amber); }
+
+  .form-grid { display: grid; gap: 14px; }
+  .form-grid .field.full { grid-column: 1 / -1; }
+  .form-grid.two-col { grid-template-columns: 1fr 1fr; }
+
+  .form-error {
+    background: rgba(232,115,92,0.12);
+    border: 1px solid rgba(232,115,92,0.4);
+    color: var(--coral);
+    padding: 10px 12px;
+    border-radius: 7px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .form-error.show { display: block; }
+
+  .hidden { display: none !important; }
+
+  /* ---------- Theme switcher ---------- */
+  .topbar-right { display: flex; align-items: center; gap: 14px; }
+
+  .theme-switcher { position: relative; }
+  .theme-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 7px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+  .theme-trigger:hover { border-color: var(--amber); color: var(--text); }
+  .theme-trigger-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--amber);
+    box-shadow: 0 0 0 2px var(--panel-2);
+    flex-shrink: 0;
+  }
+
+  .theme-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    display: none;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    box-shadow: 0 14px 34px rgba(0,0,0,0.35);
+    z-index: 30;
+  }
+  .theme-panel.open { display: grid; }
+
+  .swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--sw);
+    border: 1px solid rgba(128,128,128,0.35);
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.12s ease;
+  }
+  .swatch:hover { transform: scale(1.14); }
+  .swatch.active {
+    border-color: var(--sw);
+    box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--sw);
+  }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">валюта<span>·</span>табло</div>
+    </div>
+    <div class="topbar-right">
+      <div class="theme-switcher">
+        <button class="theme-trigger" id="themeTrigger" type="button" aria-haspopup="true" aria-expanded="false">
+          <span class="theme-trigger-dot" id="themeTriggerDot"></span>
+          Тема
+        </button>
+        <div class="theme-panel" id="themePanel" role="listbox" aria-label="Выбор цветовой темы">
+          <button class="swatch active" type="button" data-theme="board" style="--sw:#0e1826" aria-label="Табло (текущая)"></button>
+          <button class="swatch" type="button" data-theme="light" style="--sw:#f7f5f0" aria-label="Светлая"></button>
+          <button class="swatch" type="button" data-theme="grey" style="--sw:#26282b" aria-label="Серая"></button>
+          <button class="swatch" type="button" data-theme="amber-green" style="--sw:#0a1f14" aria-label="Изумрудная"></button>
+          <button class="swatch" type="button" data-theme="blue-cyan" style="--sw:#071b30" aria-label="Сине-голубая"></button>
+        </div>
+      </div>
+      <div class="auth-status" id="authStatus"></div>
+    </div>
+  </header>
+
+  <!-- AUTH VIEW -->
+  <div id="authView" class="auth-shell hidden">
+    <div class="auth-tabs">
+      <button id="tabLogin" class="active">Вход</button>
+      <button id="tabRegister">Регистрация</button>
+    </div>
+
+    <div class="card">
+      <div class="form-error" id="loginError"></div>
+      <form id="loginForm" class="form-grid">
+        <div class="field full">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" required>
+        </div>
+        <div class="field full">
+          <label for="loginPassword">Пароль</label>
+          <input type="password" id="loginPassword" required>
+        </div>
+        <button class="btn full" type="submit">Войти</button>
+      </form>
+
+      <form id="registerForm" class="form-grid hidden">
+        <div class="form-error" id="registerError"></div>
+        <div class="form-grid two-col" style="grid-column: 1 / -1;">
+          <div class="field"><label>Имя</label><input type="text" id="regFirstName" required></div>
+          <div class="field"><label>Фамилия</label><input type="text" id="regLastName" required></div>
+        </div>
+        <div class="field full"><label>Email</label><input type="email" id="regEmail" required></div>
+        <div class="field full"><label>Телефон</label><input type="text" id="regPhone" placeholder="+79001234567" required></div>
+        <div class="form-grid two-col" style="grid-column: 1 / -1;">
+          <div class="field"><label>Пароль</label><input type="password" id="regPassword" required></div>
+          <div class="field"><label>Повтор пароля</label><input type="password" id="regConfirmPassword" required></div>
+        </div>
+        <button class="btn full" type="submit">Создать аккаунт</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- APP VIEW -->
+  <div id="appView" class="hidden">
+
+    <section class="hero">
+      <div class="label"><span class="live-dot"></span>лучший курс прямо сейчас</div>
+      <div class="best-rate" id="heroRate">
+        <div class="figure mono">—<sup>₽ / USD</sup></div>
+        <div class="meta">загрузка…</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">Конвертер</div>
+      <div class="section-sub">Курсы валют берутся из выбранного банка в реальном времени</div>
+
+      <div class="toggle-row">
+        <button type="button" class="dir-btn active" data-dir="rub-to-foreign">RUB → USD/EUR</button>
+        <button type="button" class="dir-btn" data-dir="foreign-to-rub">USD/EUR → RUB</button>
+      </div>
+
+      <form id="converterForm" class="converter-grid">
+        <div class="field">
+          <label for="convAmount">Сумма</label>
+          <input type="number" id="convAmount" min="0" step="0.01" value="1000" required>
+        </div>
+        <div class="field">
+          <label for="convCurrency">Валюта</label>
+          <select id="convCurrency">
+            <option value="usd">USD</option>
+            <option value="eur">EUR</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="convBank">Банк</label>
+          <select id="convBank"></select>
+        </div>
+        <button class="btn" type="submit">Рассчитать</button>
+      </form>
+
+      <div class="convert-result" id="convResult">
+        <div class="amount-row">
+          <div class="amount mono" id="convAmountResult">—</div>
+          <div class="fee-note">Сумма указана без учёта комиссии, взимаемой банком</div>
+        </div>
+        <div class="rate-note" id="convRateNote"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">Табло курсов</div>
+      <div class="section-sub" id="boardSub">курсы банков, актуальные на данный момент</div>
+      <div class="table-scroll">
+        <table class="board" id="ratesTable">
+          <thead>
+            <tr>
+              <th data-sort="bank_name">Банк</th>
+              <th data-sort="usd_buy" class="num">USD покупка</th>
+              <th data-sort="usd_sell" class="num">USD продажа</th>
+              <th data-sort="eur_buy" class="num">EUR покупка</th>
+              <th data-sort="eur_sell" class="num">EUR продажа</th>
+            </tr>
+          </thead>
+          <tbody id="ratesBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <footer>currency-converter.ru · курсы валют обновляются автоматически каждые 30 минут</footer>
+</div>
+
+<script>
+const API = ''; // тот же домен — same-origin, куки уходят автоматически
+
+let banks = [];
+let sortKey = null;
+let sortAsc = true;
+let convDirection = 'rub-to-foreign';
+
+// ---------- helpers ----------
+async function api(path, options = {}) {
+  const res = await fetch(API + path, {
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  let data = null;
+  try { data = await res.json(); } catch (e) {}
+  if (!res.ok) {
+    const message = (data && (data.detail || data.message)) || `Ошибка ${res.status}`;
+    throw new Error(message);
+  }
+  return data;
+}
+
+function showError(el, message) {
+  el.textContent = message;
+  el.classList.add('show');
+}
+function hideError(el) {
+  el.classList.remove('show');
+}
+
+// ---------- auth flow ----------
+async function checkAuth() {
+  try {
+    const user = await api('/users/me/');
+    enterApp(user);
+  } catch (e) {
+    showAuthView();
+  }
+}
+
+function showAuthView() {
+  document.getElementById('authView').classList.remove('hidden');
+  document.getElementById('appView').classList.add('hidden');
+  document.getElementById('authStatus').innerHTML = '';
+}
+
+function enterApp(user) {
+  document.getElementById('authView').classList.add('hidden');
+  document.getElementById('appView').classList.remove('hidden');
+  const name = (user && (user.first_name || user.email)) || 'аккаунт';
+  document.getElementById('authStatus').innerHTML =
+    `<span><strong>${escapeHtml(name)}</strong></span>
+     <button class="btn ghost small" id="logoutBtn">Выйти</button>`;
+  document.getElementById('logoutBtn').addEventListener('click', doLogout);
+  loadRates();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+document.getElementById('tabLogin').addEventListener('click', () => {
+  document.getElementById('tabLogin').classList.add('active');
+  document.getElementById('tabRegister').classList.remove('active');
+  document.getElementById('loginForm').classList.remove('hidden');
+  document.getElementById('registerForm').classList.add('hidden');
+});
+document.getElementById('tabRegister').addEventListener('click', () => {
+  document.getElementById('tabRegister').classList.add('active');
+  document.getElementById('tabLogin').classList.remove('active');
+  document.getElementById('registerForm').classList.remove('hidden');
+  document.getElementById('loginForm').classList.add('hidden');
+});
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('loginError');
+  hideError(errEl);
+  try {
+    await api('/auth/login/', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: document.getElementById('loginEmail').value,
+        password: document.getElementById('loginPassword').value,
+      }),
+    });
+    checkAuth();
+  } catch (err) {
+    showError(errEl, err.message);
+  }
+});
+
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('registerError');
+  hideError(errEl);
+  try {
+    await api('/auth/register/', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: document.getElementById('regEmail').value,
+        password: document.getElementById('regPassword').value,
+        confirm_password: document.getElementById('regConfirmPassword').value,
+        phone_number: document.getElementById('regPhone').value,
+        first_name: document.getElementById('regFirstName').value,
+        last_name: document.getElementById('regLastName').value,
+      }),
+    });
+    document.getElementById('tabLogin').click();
+    document.getElementById('loginEmail').value = document.getElementById('regEmail').value;
+  } catch (err) {
+    showError(errEl, err.message);
+  }
+});
+
+async function doLogout() {
+  try { await api('/auth/logout', { method: 'POST' }); } catch (e) {}
+  showAuthView();
+}
+
+// ---------- rates board ----------
+async function loadRates() {
+  try {
+    banks = await api('/currency/all_currency_rates/');
+    renderTable();
+    populateBankSelect();
+    loadHeroRate();
+  } catch (e) {
+    document.getElementById('boardSub').textContent = 'Не удалось загрузить курсы: ' + e.message;
+  }
+}
+
+async function loadHeroRate() {
+  try {
+    const data = await api('/currency/best_rates/?buy=true&usd=true&count=1');
+    const top = data.buy && data.buy.USD && data.buy.USD[0];
+    const el = document.getElementById('heroRate');
+    if (top) {
+      el.innerHTML = `
+        <div class="figure mono">${Number(top.usd_buy).toFixed(2)}<sup>₽ / USD</sup></div>
+        <div class="meta">лучшая покупка у <b>${escapeHtml(top.bank_name)}</b> · обновлено ${escapeHtml(top.update_time)}</div>`;
+    } else {
+      el.innerHTML = `<div class="meta">данные пока недоступны</div>`;
+    }
+  } catch (e) {
+    document.getElementById('heroRate').innerHTML = `<div class="meta">данные пока недоступны</div>`;
+  }
+}
+
+function renderTable() {
+  let rows = [...banks];
+  if (sortKey) {
+    rows.sort((a, b) => {
+      const av = a[sortKey], bv = b[sortKey];
+      const cmp = typeof av === 'string' ? av.localeCompare(bv) : av - bv;
+      return sortAsc ? cmp : -cmp;
+    });
+  }
+  const body = document.getElementById('ratesBody');
+  body.innerHTML = rows.map(b => `
+    <tr>
+      <td><div class="bank-name">${escapeHtml(b.bank_name)}</div><div class="bank-en">${escapeHtml(b.bank_en)}</div></td>
+      <td class="num buy">${Number(b.usd_buy).toFixed(2)}</td>
+      <td class="num sell">${Number(b.usd_sell).toFixed(2)}</td>
+      <td class="num buy">${Number(b.eur_buy).toFixed(2)}</td>
+      <td class="num sell">${Number(b.eur_sell).toFixed(2)}</td>
+    </tr>
+  `).join('');
+  document.getElementById('boardSub').textContent = `${banks.length} банков · нажмите на заголовок для сортировки`;
+}
+
+document.querySelectorAll('table.board th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    sortAsc = sortKey === key ? !sortAsc : true;
+    sortKey = key;
+    renderTable();
+  });
+});
+
+function populateBankSelect() {
+  const sel = document.getElementById('convBank');
+  sel.innerHTML = banks.map(b => `<option value="${escapeHtml(b.bank_en)}">${escapeHtml(b.bank_name)}</option>`).join('');
+}
+
+// ---------- converter ----------
+document.querySelectorAll('.dir-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    convDirection = btn.dataset.dir;
+    document.getElementById('convResult').classList.remove('show');
+  });
+});
+
+document.getElementById('converterForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const amount = document.getElementById('convAmount').value;
+  const currency = document.getElementById('convCurrency').value;
+  const bankEn = document.getElementById('convBank').value;
+  if (!bankEn) return;
+
+  try {
+    const data = await api(`/currency/convert/${bankEn}/${convDirection}?amount=${amount}&${currency}=true`);
+    const info = data[currency];
+    const resultBox = document.getElementById('convResult');
+    if (info) {
+      const suffix = convDirection === 'rub-to-foreign' ? currency.toUpperCase() : '₽';
+      document.getElementById('convAmountResult').textContent = `${info.result} ${suffix}`;
+      document.getElementById('convRateNote').textContent =
+        `курс ${info.rate} · ${data.bank_name}`;
+      resultBox.classList.add('show');
+    }
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+// ---------- theme switcher ----------
+// Тема хранится только в памяти вкладки (без localStorage) — сбрасывается
+// при перезагрузке страницы. При желании легко добавить localStorage,
+// когда файл будет жить на вашем собственном домене.
+function applyTheme(name) {
+  document.documentElement.setAttribute('data-theme', name);
+  document.querySelectorAll('.swatch').forEach(sw => {
+    sw.classList.toggle('active', sw.dataset.theme === name);
+  });
+  const activeSwatch = document.querySelector(`.swatch[data-theme="${name}"]`);
+  if (activeSwatch) {
+    const swColor = getComputedStyle(activeSwatch).getPropertyValue('--sw').trim();
+    document.getElementById('themeTriggerDot').style.background = swColor;
+  }
+}
+
+const themeTrigger = document.getElementById('themeTrigger');
+const themePanel = document.getElementById('themePanel');
+
+themeTrigger.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const isOpen = themePanel.classList.toggle('open');
+  themeTrigger.setAttribute('aria-expanded', isOpen);
+});
+document.addEventListener('click', () => {
+  themePanel.classList.remove('open');
+  themeTrigger.setAttribute('aria-expanded', 'false');
+});
+document.querySelectorAll('.swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    applyTheme(sw.dataset.theme);
+    themePanel.classList.remove('open');
+    themeTrigger.setAttribute('aria-expanded', 'false');
+  });
+});
+
+// ---------- init ----------
+applyTheme('board');
+checkAuth();
+</script>
+
+</body>
+</html>
