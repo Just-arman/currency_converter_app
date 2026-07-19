@@ -6,16 +6,17 @@ from app.users.dao import RolesDAO, UsersDAO
 from app.users.dependencies import (
     check_refresh_token, 
     get_current_admin_user,
-    get_current_user
+    get_current_user,
+    get_current_user_for_logout
 )
 from app.users.models import Users
 from app.users.schemas import (
-    SAuthResponse, 
-    SUserRoleUpdate, 
-    SRoleUpdateByID,                  
-    SUserAddDB, 
-    SUserAuth, 
-    SUserRoleRead, 
+    SAuthResponse,
+    SUserRoleUpdate,
+    SRoleUpdateByID,
+    SUserAddDB,
+    SUserAuth,
+    SUserRoleRead,
     SUserRegister
 )
 from app.users.auth import get_password_hash
@@ -79,7 +80,7 @@ async def process_refresh_token(
 
 
 @router_auth.post("/logout")
-async def logout(response: Response, user_data: Users = Depends(get_current_user)):
+async def logout(response: Response, user_data: Users = Depends(get_current_user_for_logout)):
     response.delete_cookie("user_access_token")
     response.delete_cookie("user_refresh_token")
     return {'message': 'Пользователь успешно вышел из системы'}

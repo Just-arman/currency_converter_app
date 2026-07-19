@@ -19,6 +19,12 @@ EmailIncorrectException = HTTPException(
     detail='Почта указана некорректно'
 )
 
+# Невозможность выйти из системы без входа в неё
+NotLoggedInException = HTTPException(
+    status_code=400,
+    detail="Вы не можете выйти из системы, потому что ещё не вошли в неё"
+)
+
 # Токен истек
 TokenExpiredException = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,

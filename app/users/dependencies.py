@@ -11,6 +11,7 @@ from app.dao.session_maker import SessionDep
 from app.exceptions import (
     ForbiddenException, 
     NoJwtException,
+    NotLoggedInException,
     UserNotFoundByIDException, 
     TokenExpiredException,
     TokenNoFound
@@ -81,6 +82,17 @@ async def get_current_user(token: str = Depends(get_access_token), session: Asyn
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
+
+
+async def get_current_user_for_logout(
+    request: Request,
+    session: AsyncSession = SessionDep
+):
+    try:
+        token = get_access_token(request)
+        return await get_current_user(token=token, session=session)
+    except HTTPException:
+        raise NotLoggedInException
 
 
 async def get_current_admin_user(current_user: Users = Depends(get_current_user)):

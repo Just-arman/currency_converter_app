@@ -60,13 +60,12 @@ def create_app() -> FastAPI:
     # Настройка CORS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["https://currency-converter.ru", "https://www.currency-converter.ru"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"]
     )
 
-    # Монтирование статических файлов
     register_routers(app)
 
     return app
