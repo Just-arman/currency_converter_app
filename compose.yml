@@ -1,16 +1,21 @@
-# docker compose build - используем для сборки образов, если меняли содежримое любого файла приложения
+# docker compose build - используем для сборки образов, если меняли содержимое любого файла приложения
 # docker compose up - используем для запуска образов, если изменили только содержимое docker-compose
 
 services:
   db:
     image: postgres:17
     container_name: converter_db
-    env_file: # Файл с переменными окружения (Вместо environment)
-      - .env
+    env_file:
+      - .env.prod
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5484:5432"
+    healthcheck: # # Проверяем готовность PostgreSQL перед запуском app (избегаем гонки состояний)
+      test: ["CMD-SHELL", "pg_isready -U adminus -d converter_db"]
+      interval: 5s # интервал проверок (последующая проверка запустится не раньше чем через 5s после запуска предыдущей)
+      timeout: 5s # макс. время ожидания одной проверки
+      retries: 3 # сколько неудачных попыток допустимо перед утверждением статуса unhealthy
 
   app:
     image: converter_image
@@ -19,9 +24,10 @@ services:
     ports:
       - "8940:8000"
     env_file:
-      - .env
+      - .env.prod
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:
