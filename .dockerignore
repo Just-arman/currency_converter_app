@@ -1,6 +1,10 @@
 .pytest_cache/
 .venv/
 __pycache__/
-.env
 *.pyc
 tests/
+.env
+.env.example
+.env.prod
+compose.yml
+Dockerfile

@@ -1,6 +1,4 @@
-# Игнорирование виртуальных окружений Python
-.vscode/
-.idea/
+.pytest_cache/
 .venv/
 __pycache__/
 *.pyc
