@@ -15,7 +15,7 @@
     --amber: #f0a93b;
     --amber-dim: #c9860f;
     --amber-hover: #ffb84f;
-    --mint: #6fcf97;
+    --mint: #93dbb0;
     --coral: #e8735c;
     --text: #f4efe3;
     --muted: #93a3b8;
@@ -59,14 +59,14 @@
     --panel: #102b1c;
     --panel-2: #143322;
     --border: #1f4a30;
-    --amber: #14e8a0;
-    --amber-dim: #0fbd82;
-    --amber-hover: #4ff5bc;
+    --amber: #f0a93b;
+    --amber-dim: #c9860f;
+    --amber-hover: #ffb84f;
     --mint: #6fcf97;
     --coral: #e8735c;
     --text: #eef4e2;
     --muted: #8fae9a;
-    --glow-1: rgba(20,232,160,0.16);
+    --glow-1: rgba(240,169,59,0.14);
     --glow-2: rgba(111,207,151,0.06);
   }
   [data-theme="blue-cyan"] {
@@ -209,24 +209,37 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 14px;
+    margin-bottom: 18px;
   }
-  .hero .best-rate {
+  .hero .best-rate-grid {
+    display: flex;
+    gap: 36px;
+    flex-wrap: wrap;
+  }
+  .hero .rate-block { min-width: 200px; }
+  .hero .rate-kind {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .hero .rate-row {
     display: flex;
     align-items: flex-end;
-    gap: 18px;
+    gap: 14px;
     flex-wrap: wrap;
   }
   .hero .figure {
     font-family: 'Courier Prime', monospace;
     font-weight: 700;
-    font-size: 56px;
-    color: var(--amber);
-    text-shadow: 0 0 22px rgba(240,169,59,0.35);
+    font-size: 34px;
     line-height: 1;
   }
-  .hero .figure sup { font-size: 22px; color: var(--muted); font-weight: 500; margin-left: 4px; }
-  .hero .meta { color: var(--muted); font-size: 14px; padding-bottom: 6px; }
+  .hero .figure.buy { color: var(--mint); text-shadow: 0 0 18px rgba(111,207,151,0.3); }
+  .hero .figure.sell { color: var(--amber); text-shadow: 0 0 18px rgba(240,169,59,0.3); }
+  .hero .figure sup { font-size: 15px; color: var(--muted); font-weight: 500; margin-left: 3px; }
+  .hero .meta { color: var(--muted); font-size: 13px; padding-bottom: 4px; }
   .hero .meta b { color: var(--text); }
 
   /* ---------- Cards / sections ---------- */
@@ -434,8 +447,11 @@
     text-align: center;
     color: var(--muted);
     font-size: 12px;
+    line-height: 1.9;
     margin-top: 40px;
   }
+  footer a { color: var(--amber); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -506,9 +522,21 @@
 
     <section class="hero">
       <div class="label"><span class="live-dot"></span>лучший курс прямо сейчас</div>
-      <div class="best-rate" id="heroRate">
-        <div class="figure mono">—<sup>₽ / USD</sup></div>
-        <div class="meta">загрузка…</div>
+      <div class="best-rate-grid" id="heroRate">
+        <div class="rate-block">
+          <div class="rate-kind">Покупка</div>
+          <div class="rate-row">
+            <div class="figure buy mono">—<sup>₽ / USD</sup></div>
+          </div>
+          <div class="meta">загрузка…</div>
+        </div>
+        <div class="rate-block">
+          <div class="rate-kind">Продажа</div>
+          <div class="rate-row">
+            <div class="figure sell mono">—<sup>₽ / USD</sup></div>
+          </div>
+          <div class="meta">загрузка…</div>
+        </div>
       </div>
     </section>
 
@@ -569,7 +597,7 @@
     </section>
   </div>
 
-  <footer>currency-converter.ru · курсы валют обновляются автоматически каждые 30 минут</footer>
+  <footer>currency-converter.ru · курсы валют обновляются автоматически каждые 30 минут<br>По вопросам сотрудничества: <a href="https://t.me/Rare_tiger17" target="_blank" rel="noopener">@Rare_tiger17</a></footer>
 </div>
 
 <script>
@@ -709,19 +737,37 @@ async function loadRates() {
 }
 
 async function loadHeroRate() {
+  const el = document.getElementById('heroRate');
   try {
-    const data = await api('/currency/best_rates/?buy=true&usd=true&count=1');
-    const top = data.buy && data.buy.USD && data.buy.USD[0];
-    const el = document.getElementById('heroRate');
-    if (top) {
-      el.innerHTML = `
-        <div class="figure mono">${Number(top.usd_buy).toFixed(2)}<sup>₽ / USD</sup></div>
-        <div class="meta">лучшая покупка у <b>${escapeHtml(top.bank_name)}</b> · обновлено ${escapeHtml(top.update_time)}</div>`;
-    } else {
-      el.innerHTML = `<div class="meta">данные пока недоступны</div>`;
-    }
+    const data = await api('/currency/best_rates/?buy=true&sell=true&usd=true&count=1');
+    const bestBuy = data.buy && data.buy.USD && data.buy.USD[0];
+    const bestSell = data.sell && data.sell.USD && data.sell.USD[0];
+
+    const buyHtml = bestBuy ? `
+      <div class="rate-row">
+        <div class="figure buy mono">${Number(bestBuy.usd_buy).toFixed(2)}<sup>₽ / USD</sup></div>
+      </div>
+      <div class="meta">у <b>${escapeHtml(bestBuy.bank_name)}</b> · обновлено ${escapeHtml(bestBuy.update_time)}</div>`
+      : `<div class="meta">данные пока недоступны</div>`;
+
+    const sellHtml = bestSell ? `
+      <div class="rate-row">
+        <div class="figure sell mono">${Number(bestSell.usd_sell).toFixed(2)}<sup>₽ / USD</sup></div>
+      </div>
+      <div class="meta">у <b>${escapeHtml(bestSell.bank_name)}</b> · обновлено ${escapeHtml(bestSell.update_time)}</div>`
+      : `<div class="meta">данные пока недоступны</div>`;
+
+    el.innerHTML = `
+      <div class="rate-block">
+        <div class="rate-kind">Покупка</div>
+        ${buyHtml}
+      </div>
+      <div class="rate-block">
+        <div class="rate-kind">Продажа</div>
+        ${sellHtml}
+      </div>`;
   } catch (e) {
-    document.getElementById('heroRate').innerHTML = `<div class="meta">данные пока недоступны</div>`;
+    el.innerHTML = `<div class="meta">данные пока недоступны</div>`;
   }
 }
 
@@ -795,10 +841,21 @@ document.getElementById('converterForm').addEventListener('submit', async (e) =>
 });
 
 // ---------- theme switcher ----------
-// Тема хранится только в памяти вкладки (без localStorage) — сбрасывается
-// при перезагрузке страницы. При желании легко добавить localStorage,
-// когда файл будет жить на вашем собственном домене.
-function applyTheme(name) {
+// Тема сохраняется в localStorage и восстанавливается при следующем
+// визите/перезагрузке страницы. Обёрнуто в try/catch на случай,
+// если localStorage недоступен (приватный режим браузера и т.п.) —
+// тогда тема просто не будет запоминаться, но приложение продолжит работать.
+const THEME_STORAGE_KEY = 'currency-app-theme';
+
+function saveTheme(name) {
+  try { localStorage.setItem(THEME_STORAGE_KEY, name); } catch (e) {}
+}
+
+function loadSavedTheme() {
+  try { return localStorage.getItem(THEME_STORAGE_KEY); } catch (e) { return null; }
+}
+
+function applyTheme(name, persist = true) {
   document.documentElement.setAttribute('data-theme', name);
   document.querySelectorAll('.swatch').forEach(sw => {
     sw.classList.toggle('active', sw.dataset.theme === name);
@@ -808,6 +865,7 @@ function applyTheme(name) {
     const swColor = getComputedStyle(activeSwatch).getPropertyValue('--sw').trim();
     document.getElementById('themeTriggerDot').style.background = swColor;
   }
+  if (persist) saveTheme(name);
 }
 
 const themeTrigger = document.getElementById('themeTrigger');
@@ -831,7 +889,9 @@ document.querySelectorAll('.swatch').forEach(sw => {
 });
 
 // ---------- init ----------
-applyTheme('board');
+const savedTheme = loadSavedTheme();
+const validThemes = Array.from(document.querySelectorAll('.swatch')).map(sw => sw.dataset.theme);
+applyTheme(validThemes.includes(savedTheme) ? savedTheme : 'board', false);
 checkAuth();
 </script>
 
